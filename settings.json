@@ -1,0 +1,31 @@
+{
+  "enabledMcpjsonServers": [
+    "codebase-memory-mcp"
+  ],
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/reindex-if-needed.sh\" 2>/dev/null || true",
+            "statusMessage": "Reindexing codebase-memory for the repos that changed...",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/reindex-if-needed.sh\" 2>/dev/null || true",
+            "statusMessage": "Reindexing codebase-memory for the repos that changed...",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

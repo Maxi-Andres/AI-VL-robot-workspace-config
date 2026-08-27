@@ -1,0 +1,10 @@
+# Per-machine reindex signatures for the codebase-memory graph. Machine state, not config.
+.reindex-state/
+
+# Personal overrides, never shared.
+settings.local.json
+
+# OS / editor cruft
+.DS_Store
+*.swp
+*~
