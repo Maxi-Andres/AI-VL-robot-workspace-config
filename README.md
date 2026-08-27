@@ -83,8 +83,16 @@ python3 -m venv ~/.local/share/dev-tools
 ~/.local/share/dev-tools/bin/pip install ruff pre-commit pip-audit
 for t in ruff pre-commit pip-audit; do ln -sf ~/.local/share/dev-tools/bin/$t ~/.local/bin/$t; done
 
-# Frontend + duplication detection
-bun add -g jscpd            # multi-language copy/paste detector
+# Duplication detection (multi-language: Python, TS, C++)
+bun add -g jscpd
+```
+
+`jscpd` must be invoked as **`bunx jscpd`**, not as a bare `jscpd`: bun's global shim
+execs `node`, which is not installed on this machine (bun only). Useful invocation — it
+found the three copies of the dead-man loop on its first run:
+
+```bash
+bunx jscpd unitree_ros2/robot_executor --min-lines 12 --min-tokens 60 --reporters consoleFull
 ```
 
 ## Conventions
