@@ -1,11 +1,12 @@
-# workspace-config
+# AI-VL-robot-workspace-config
 
 The shared configuration and engineering standard for the robot + AI-VL workspace. **This
 repo is the `.claude` directory of the workspace**, so it gets cloned into position rather
-than cloned next to the code:
+than cloned next to the code — note the explicit destination, which is what makes the repo
+root land as `.claude`:
 
 ```bash
-git clone <this-repo> ~/Desktop/.claude
+git clone https://github.com/Maxi-Andres/AI-VL-robot-workspace-config.git ~/Desktop/.claude
 bash ~/Desktop/.claude/install.sh
 ```
 
