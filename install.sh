@@ -11,13 +11,20 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(dirname "$HERE")"
 
-if [ -e "$ROOT/.mcp.json" ] && [ ! -L "$ROOT/.mcp.json" ]; then
-  echo "[install] $ROOT/.mcp.json exists and is a real file — leaving it alone." >&2
-  echo "[install] Compare it with $HERE/mcp.json and remove it if you want the linked one." >&2
-else
-  ln -sfn "$HERE/mcp.json" "$ROOT/.mcp.json"
-  echo "[install] linked $ROOT/.mcp.json -> .claude/mcp.json"
-fi
+# Two files Claude Code reads from the workspace ROOT, which is outside .claude/ — so they
+# are versioned in here and linked into place.
+link_into_root() {
+  local src="$1" dst="$ROOT/$2"
+  if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+    echo "[install] $dst exists and is a real file — leaving it alone." >&2
+    echo "[install] Compare it with $HERE/$src and remove it if you want the linked one." >&2
+  else
+    ln -sfn "$HERE/$src" "$dst"
+    echo "[install] linked $dst -> .claude/$src"
+  fi
+}
+link_into_root mcp.json .mcp.json
+link_into_root CLAUDE.md CLAUDE.md
 
 chmod +x "$HERE/hooks/"*.sh 2>/dev/null || true
 echo "[install] hooks are executable"

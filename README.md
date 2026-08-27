@@ -43,6 +43,8 @@ directory no repo tracked — one wiped machine and it was gone.
 | `hooks/reindex-if-needed.sh` | Keeps the `codebase-memory` graph fresh. Discovers repos dynamically; re-indexes only what changed (~0.2 s per repo, nothing when nothing changed). |
 | `settings.json` | Registers the hook on SessionStart/Stop and enables the MCP server. |
 | `mcp.json` | The `codebase-memory-mcp` declaration, linked to `../.mcp.json` by `install.sh`. |
+| `CLAUDE.md` | Always-on directives, linked to `../CLAUDE.md` so Claude Code loads it when a session opens at `~/Desktop`. Kept short by design. |
+| `STATE.md` | What is done, what is pending, and a health check to re-run. **Start here after a break.** |
 
 ## The two things that bite
 
