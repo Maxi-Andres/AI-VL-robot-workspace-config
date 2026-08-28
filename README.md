@@ -44,7 +44,7 @@ directory no repo tracked — one wiped machine and it was gone.
 | `settings.json` | Registers the hook on SessionStart/Stop and enables the MCP server. |
 | `mcp.json` | The `codebase-memory-mcp` declaration, linked to `../.mcp.json` by `install.sh`. |
 | `CLAUDE.md` | Always-on directives, linked to `../CLAUDE.md` so Claude Code loads it when a session opens at `~/Desktop`. Kept short by design. |
-| `STATE.md` | What is done, what is pending, and a health check to re-run. **Start here after a break.** |
+| `ROADMAP.md` | **The single source of truth**: what to do per track (Go2 itinerant / G1 on-site / AI-VL app / platform), the verified state of every capability, the corrections log, and the health check. In Spanish — it is planning narrative. **Start here after a break.** Replaced `STATE.md` on 2026-08-28, absorbing four scattered backlogs. |
 
 ## The two things that bite
 
