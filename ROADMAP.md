@@ -100,7 +100,8 @@ hace distinto de cualquier enlace del Go2, y tiene tres consecuencias:
 | Control por voz, una acción | **funcionando** en el Go2 | `docs/COMO_USAR_VOZ_ROBOT.md`, `robot_executor` |
 | Control por voz, secuencia | **no existe** | el intérprete devuelve **un** skill, no una lista |
 | Persistencia de la app (Redis/Mongo) | **no existe** | `grep -riE 'redis\|pymongo\|mongo\|minio'` en AI-VL → 0 hits |
-| Tests | 30 pasan, 4 xfail estrictos | `24 passed, 2 xfailed` + `6 passed, 2 xfailed` |
+| Tests | **70 pasan, 6 xfail estrictos** (eran 30 y 4 antes del 28-08) | executor 24+2 · camera_bridge 11+1 · relay 6+2 · video-pipeline 9+1 · backend 10 · iacore 10 |
+| Commit gate | verde en los 7 repos con código | `pre-commit run` rc=0 en los 7 |
 | Robot | **apagado / fuera de red** | `.123.161` sin respuesta; único vecino en VLAN 20 es el router |
 
 ---
@@ -322,20 +323,32 @@ su §8 y el pendiente también figura en `RED-Y-DDS.md` §9.
 
 ### 7.2. Tests que no necesitan robot — hacer estos mientras el robot está apagado
 
-- [ ] **Contract test backend ↔ iacore.** Los cuatro modelos de request están declarados
-      idénticos en `app.py` y `service.py` y nada lo verifica. El borde prohíbe compartir
-      módulo, así que el arreglo es un test, no un refactor. Los dos son FastAPI y exponen
-      `/openapi.json`. **Es el único pendiente que previene un bug futuro en vez de limpiar
-      uno pasado:** agregar `seq` para la carrera de comandos habría sido descartado en
-      silencio por Pydantic.
-- [ ] **Test del parser MJPEG.** Frame partido entre chunks, basura antes del SOI, sin EOI
-      dentro del cap. Cubre `camera_sources._read_stream` y `mjpeg_server.pump` — el mismo
-      algoritmo de 20 líneas duplicado en dos repos, **los dos sin techo de buffer**.
-- [ ] **Frontend: one-frame-in-flight** en el socket de detección. Es la invariante sobre la
-      que se apoya todo el camino en vivo. `vitest` ya está cableado.
+- [x] **Contract test backend ↔ iacore** — hecho 2026-08-28.
+      `AI-VL-backend/tests/test_iacore_contract.py` + su espejo
+      `AI-VL-core/tests/test_backend_contract.py`. Congela los 4 modelos compartidos por
+      **nombre de campo y orden** (los tipos y defaults difieren a propósito: el gateway no
+      inventa valores, el servicio pone los de `config.json`). Lee las clases con `ast` en
+      vez de importar — así no necesita FastAPI, pydantic, Ollama ni el repo hermano, y corre
+      en CI donde solo hay un repo clonado. **Probado que muerde:** inyectando `seq` solo en
+      iacore, los dos repos fallan. Cambiar un modelo es ahora un cambio de dos repos.
+- [x] **Test del parser MJPEG** — hecho 2026-08-28. Los dos lados, uno por máquina:
+      `robot-video-pipeline/tests/test_mjpeg_framing.py` (9 tests) y
+      `unitree_ros2/robot_camera_bridge/tests/test_mjpeg_framing.py` (11 tests). Cubren frame
+      partido entre chunks, marcador SOI y EOI a caballo de dos lecturas, preámbulo multipart,
+      dos frames en un chunk, y frame truncado al cerrar. El bridge se testea sin cv2 ni
+      rclpy (stubs en `conftest.py`), así que corre fuera del devcontainer.
+      **El techo de buffer que falta quedó como `xfail(strict=True)` en los dos** — medido con
+      `tracemalloc`: hoy el scanner retiene los 5 MB de un frame sin EOI.
+- [ ] **Frontend: one-frame-in-flight** en el socket de detección — **pendiente, y necesita
+      una decisión.** `vitest` corre en pre-commit y CI (`--passWithNoTests`), pero el repo
+      **no tiene entorno DOM ni testing-library**, y el invariante vive dentro del closure de
+      `useDetectionSocket`. Dos caminos: (a) agregar `jsdom` + `@testing-library/react` como
+      devDeps — no van al bundle, pero cambian el lockfile y CI usa `--frozen-lockfile`;
+      (b) extraer el predicado de gating a una función pura y testearla sin DOM — no agrega
+      dependencias pero toca código del camino de video en vivo.
 
-Cuatro repos están verdes en CI **porque no tienen suite**, no porque estén testeados:
-`AI-VL-core`, `AI-VL-backend`, `robot-telemetry-agent`, `robot-video-pipeline`.
+Los repos **sin suite** bajaron de cuatro a dos: quedan `AI-VL-core` (tiene el contract test,
+pero nada de su inferencia) y `robot-telemetry-agent` (nada).
 
 ### 7.3. Los 4 xfails estrictos
 
@@ -362,9 +375,17 @@ Arreglá el código, borrá el marcador — no borres el test.
 - [ ] **Helpers compartidos en el fork** — `_load_dotenv` y `_as_bool` copiados entre el
       ejecutor y el camera bridge; `_clamp` byte-idéntico en los dos módulos de comandos.
       Mismo repo, un `common.py` no rompe ningún borde.
-- [ ] **5 hooks de fetch-on-mount sin `AbortController`** — `useSpeech`, `useOptions`,
-      `usePresence`, `CameraControls`, `NetworkControls`. `LivePage` lo hace bien para las
-      llamadas largas al VLM: la disciplina existe y se aplica desparejo.
+- [x] **5 hooks de fetch-on-mount sin `AbortController`** — hecho 2026-08-28. `useSpeech`,
+      `useOptions`, `usePresence`, `CameraControls`, `NetworkControls`. Para eso hubo que
+      agregar `signal?: AbortSignal` opcional a 6 GET de `api/backend.ts`, siguiendo el patrón
+      que `askVlm`/`interpretCommand` ya usaban; es aditivo, ningún call site existente cambió.
+      Dos casos valían más que el warning de React: en `useSpeech`, un abort caía en el
+      `.catch` y ponía la lista de voces en vacío — o sea "el server no tiene voces neurales",
+      degradando al TTS del browser en silencio; en `NetworkControls`, una respuesta lenta del
+      robot ANTERIOR podía aterrizar después de cambiar de robot y repintar los campos con el
+      transporte equivocado.
+      **Nota, fuera de alcance:** los `setTimeout(loadStatus, …)` de `NetworkControls`
+      (líneas 93 y 111-114) tampoco se limpian al desmontar. Es previo, no lo toqué.
 
 ### 7.5. Producto / UX — de `FIX.txt`
 
@@ -397,13 +418,26 @@ libreta de ideas; lo que se decide hacer sube acá.
 
 ### 7.6. Housekeeping
 
-- [ ] Borrar `unitree_ros2/setupOLD.sh` (12 líneas, cero referencias) y
-      `robot-video-pipeline/frigate/config/backup_config.yaml` (el propio inventario del
-      proyecto lo lista como sin usar).
+- [x] Borrar `unitree_ros2/setupOLD.sh` y
+      `robot-video-pipeline/frigate/config/backup_config.yaml` — hecho 2026-08-28.
+      Verificado antes: cero referencias en código, scripts, unidades systemd y configs.
+      `setupOLD.sh` estaba trackeado (recuperable con `git checkout`). `backup_config.yaml`
+      **no** estaba trackeado — lo gitignorea `/frigate/config/*` — así que se movió aparte en
+      vez de borrarse: era una copia de `config.yml` de antes de la mudanza de IP, su única
+      diferencia real era el `192.168.123.99` viejo. Frigate siguió healthy después.
 - [ ] Destrackear `unitree_ros2/dds.env` — se escribe en runtime por `POST /dds`, así que cada
       cambio de red desde la UI ensucia el repo.
-- [ ] Traducir los 4 strings de debug en español de `ControlPage.tsx:280-312` — es un
-      **[blocker]** por la propia regla de idioma del workspace.
+- [ ] Traducir **2** strings en español del frontend — **[blocker]** por la regla de idioma.
+      *(Corregido 2026-08-28: `STATE.md` decía "4 strings en `ControlPage.tsx:280-312`".
+      `ControlPage.tsx` no tiene **ni un** carácter acentuado en sus 502 líneas; el dato estaba
+      mal. Ubicación real:)*
+      - `components/live/CommandPanel.tsx:239` — `Auto ON — se ejecuta solo al interpretar (sin botón)`
+      - `hooks/useGamepad.ts:174` — `"despues tocá un boton del joystick (…)"`
+
+      **NO tocar** los otros dos hits de castellano, que son correctos a propósito:
+      `CommandPanel.tsx:105` y `:116` traen *ejemplos* de comandos en español
+      (`"andá para adelante"`, `"levantá las manos"`) dentro de texto en inglés — el usuario le
+      habla al robot en español, así que los ejemplos tienen que estar en español.
 - [ ] Anotar en `robot-video-pipeline/README.md` que `go2_h264_stream.cpp` se compila pero no
       está en ningún camino de runtime. **Ojo:** eso solo si se descarta el experimento de
       §5.2 (`rt/frontvideostream` local), que es justamente retomar ese archivo. Decidir una
