@@ -4,6 +4,12 @@
 # Personal overrides, never shared.
 settings.local.json
 
+# coverage.sh scratch: a throwaway venv (kept out of every repo's environment on purpose)
+# and the per-repo .coverage databases. Both are regenerated on demand; delete to reset.
+# `.covenv/` also self-ignores — python -m venv drops a `.gitignore` with `*` inside it.
+.covenv/
+.coverage-data/
+
 # OS / editor cruft
 .DS_Store
 *.swp

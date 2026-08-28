@@ -362,6 +362,39 @@ Arreglá el código, borrá el marcador — no borres el test.
 | `test_rate_limiter_does_not_allow_double_the_budget_across_a_boundary` | ventanas fijas dejan pasar 2× en el borde |
 | `test_token_comparison_is_constant_time` | el relay compara el token con `==` |
 
+### 7.3.b. Cobertura de tests — el mapa de lo que no está protegido
+
+`.claude/coverage.sh` (on demand, **no es un gate** — el porqué está en su cabecera). Medido
+el 2026-08-28:
+
+| Archivo | Stmts | Cobertura |
+|---|---:|---:|
+| `robot_executor_service.py` | 781 | **0%** |
+| `AI-VL-core/menu.py` | 516 | 0% |
+| `AI-VL-backend/app.py` | 454 | 0% |
+| `src/vlm_common.py` | 290 | 0% |
+| `robot_camera_bridge.py` | 196 | 0% |
+| `service.py` (iacore) | 158 | 0% |
+| `g1_fsm_watch.py` | 58 | 0% |
+| `camera_sources.py` | 258 | 28% |
+| `relay_server.py` | 171 | 31% |
+| `mjpeg_server.py` | 202 | 36% |
+| `g1_commands.py` | 130 | 77% |
+| `go2_commands.py` | 49 | 84% |
+
+`robot-telemetry-agent` no tiene suite: verde en CI porque no hay nada que correr.
+
+**No poner umbral global.** Con 781 statements en 0%, un `fail under 80%` estilo JaCoCo
+obligaría a escribir tests que ejecutan líneas sin afirmar nada — exactamente lo contrario de
+la regla del estándar ("cada test nombra el defecto que atrapa"). Si algún día se quiere un
+gate, la forma correcta acá es un **ratchet por archivo** (que `relay_server.py` no baje de
+31%, que `go2_commands.py` no baje de 84%), no un número global.
+
+Un ejemplo de coverage ganándose el sueldo: el bloque sin cubrir 273-298 de `relay_server.py`
+contiene el comentario *"Closing the child's stdin makes command_sender StopMove before it
+exits, so shutting the relay down can never leave the robot walking"*. Es una **garantía de
+seguridad documentada que ningún test ejercita**.
+
 ### 7.4. Calidad y duplicación (medido)
 
 - [ ] **Helper de proxy en el gateway** — 9 `httpx.AsyncClient` por request en
@@ -372,6 +405,18 @@ Arreglá el código, borrá el marcador — no borres el test.
       se queda con el loop, el deadline, el lock y el thread; cada transporte implementa solo
       `_publish_velocity()` y `_publish_stop()`.
       `bunx jscpd unitree_ros2/robot_executor --min-lines 12 --min-tokens 60` → 3 clones, 45 líneas.
+
+      > 🔎 **Reclasificado el 2026-08-28: ya no necesita el robot.** Estaba diferido porque
+      > refactorizar el mecanismo que frena al robot sin poder probarlo era inaceptable, y
+      > coverage confirmó que el archivo está en **0%** — cero red de seguridad. Pero el
+      > spike mostró que la barrera no es técnica: `robot_executor_service.py` **se importa
+      > limpio en 0,03 s sin un solo stub** (`rclpy` se importa lazy, dentro de funciones en
+      > `:125`, `:286` y `:310`, no a nivel módulo) y **no arranca ningún thread** al
+      > importarse (`serve_forever` está en `main()`, detrás de `if __name__`). Además ya
+      > existe la base `RobotTransport(ABC)` en `:329` con 4 subclases.
+      > **Orden correcto:** primero tests del dead-man con reloj falso (sin robot, sin DDS),
+      > y con esos tests verdes recién el refactor. Nadie lo intentó — el 0% no era un
+      > impedimento, era un descuido.
 - [ ] **Helpers compartidos en el fork** — `_load_dotenv` y `_as_bool` copiados entre el
       ejecutor y el camera bridge; `_clamp` byte-idéntico en los dos módulos de comandos.
       Mismo repo, un `common.py` no rompe ningún borde.
