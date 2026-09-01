@@ -28,6 +28,7 @@ citados desde el código.
 | Arquitectura de la app AI-VL | `AI-VL-core/docs/ARCHITECTURE.md` §1-9 |
 | El estándar de ingeniería (con el incidente detrás de cada regla) | `.claude/skills/cr/references/standard.md` |
 | Runbook para poner el robot al día tras el renombre | `robot-splunk-docs/REDEPLOY-EN-EL-ROBOT.md` |
+| Licencia vencida (31/08) y alta de ThousandEyes | `robot-splunk-docs/LICENCIA-Y-THOUSANDEYES.md` |
 
 **Regla de mantenimiento:** si este documento y otro se contradicen, gana este — y el otro
 está roto y hay que arreglarlo. Si algo se termina, se tacha acá, no en cinco lugares.
@@ -103,6 +104,9 @@ hace distinto de cualquier enlace del Go2, y tiene tres consecuencias:
 | Tests | **70 pasan, 6 xfail estrictos** (eran 30 y 4 antes del 28-08) | executor 24+2 · camera_bridge 11+1 · relay 6+2 · video-pipeline 9+1 · backend 10 · iacore 10 |
 | Commit gate | verde en los 7 repos con código | `pre-commit run` rc=0 en los 7 |
 | Robot | **apagado / fuera de red** | `.123.161` sin respuesta; único vecino en VLAN 20 es el router |
+| **Telemetría CURWB en Splunk** | **existe y nadie la había registrado** — `index=wlc9800`, sourcetype `cisco:urwb:telemetry`, 55 MB/día desde `192.168.20.20`; más 83 MB/día del WLC 9800 | `license_usage.log` el 2026-08-31. Son los radios del enlace del G1 (§1): material para el pendiente de validación §6.4 |
+| **Licencia de Splunk** | **SIGUE BLOQUEADA** — el trial venció el 25/08; se pasó a Free el 31/08 pero **no alcanzó**: 6 violaciones del 26 al 31/08 (cuota 0 + el HEC siguió ingiriendo) y Free no tiene reset key. Perdidos además auth, alerting y API remota | `splunk list licenser-messages` en `.20.200`. **Salida: licencia Developer** (§2.1.e); si no, vuelve sola el **12/09**. Todo en `LICENCIA-Y-THOUSANDEYES.md` |
+| ThousandEyes en el dashboard | **paneles escritos, sin dato** — filas 5 y 6 de `dashboard-go2.xml` contra OTel Data Model v2. Org propia `SILK TECH SRL - 178` con 2 agentes online | **Bloqueo: TE exige 443 + cert de CA pública + DNS resoluble**, y valida el alcance al crear el stream. Hace falta reverse proxy y NAT — no alcanza abrir `:8088`. Ver `LICENCIA-Y-THOUSANDEYES.md` §3.1 |
 
 ---
 
