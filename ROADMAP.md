@@ -106,7 +106,9 @@ hace distinto de cualquier enlace del Go2, y tiene tres consecuencias:
 | Robot | **apagado / fuera de red** | `.123.161` sin respuesta; único vecino en VLAN 20 es el router |
 | **Telemetría CURWB en Splunk** | **existe y nadie la había registrado** — `index=wlc9800`, sourcetype `cisco:urwb:telemetry`, 55 MB/día desde `192.168.20.20`; más 83 MB/día del WLC 9800 | `license_usage.log` el 2026-08-31. Son los radios del enlace del G1 (§1): material para el pendiente de validación §6.4 |
 | **Licencia de Splunk** | **SIGUE BLOQUEADA** — el trial venció el 25/08; se pasó a Free el 31/08 pero **no alcanzó**: 6 violaciones del 26 al 31/08 (cuota 0 + el HEC siguió ingiriendo) y Free no tiene reset key. Perdidos además auth, alerting y API remota | `splunk list licenser-messages` en `.20.200`. **Salida: licencia Developer** (§2.1.e); si no, vuelve sola el **12/09**. Todo en `LICENCIA-Y-THOUSANDEYES.md` |
-| ThousandEyes en el dashboard | **paneles escritos, sin dato** — filas 5 y 6 de `dashboard-go2.xml` contra OTel Data Model v2. Org propia `SILK TECH SRL - 178` con 2 agentes online | **Bloqueo: TE exige 443 + cert de CA pública + DNS resoluble**, y valida el alcance al crear el stream. Hace falta reverse proxy y NAT — no alcanza abrir `:8088`. Ver `LICENCIA-Y-THOUSANDEYES.md` §3.1 |
+| ThousandEyes — paneles | **escritos** — filas 5 y 6 de `dashboard-go2.xml` contra OTel Data Model v2 | org propia `SILK TECH SRL - 178`, región US2, 2 agentes online |
+| ThousandEyes — camino oficial | **bloqueado por infra** — TE exige 443 + cert de CA pública + DNS resoluble, y valida el alcance al crear el stream | no alcanza abrir `:8088`: hace falta reverse proxy + NAT + allowlist de 12 IPs. **Plan completo: `LICENCIA-Y-THOUSANDEYES.md` §5** |
+| ThousandEyes — puente | **corriendo desde 2026-09-01** — `robot-splunk-docs/te-poller/`, unit `te-poller` **en esta PC** (`enabled`), 13 tests, ruff limpio. **Temporal por diseño** | consumo de licencia medido: **<5 KB/día**, no mueve la aguja. Emite los mismos nombres y unidades que el exportador oficial → los paneles no distinguen la fuente. Falta probar un reboot y, a futuro, mudarlo al server |
 
 ---
 
