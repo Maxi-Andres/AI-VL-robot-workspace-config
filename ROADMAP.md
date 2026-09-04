@@ -88,7 +88,7 @@ hace distinto de cualquier enlace del Go2, y tiene tres consecuencias:
 
 ---
 
-## 2. Estado real — verificado el 2026-08-28
+## 2. Estado real — verificado el 2026-09-04
 
 | Capacidad | Estado | Verificado cómo |
 |---|---|---|
@@ -105,10 +105,11 @@ hace distinto de cualquier enlace del Go2, y tiene tres consecuencias:
 | Commit gate | verde en los 7 repos con código | `pre-commit run` rc=0 en los 7 |
 | Robot | **apagado / fuera de red** | `.123.161` sin respuesta; único vecino en VLAN 20 es el router |
 | **Telemetría CURWB en Splunk** | **existe y nadie la había registrado** — `index=wlc9800`, sourcetype `cisco:urwb:telemetry`, 55 MB/día desde `192.168.20.20`; más 83 MB/día del WLC 9800 | `license_usage.log` el 2026-08-31. Son los radios del enlace del G1 (§1): material para el pendiente de validación §6.4 |
-| **Licencia de Splunk** | **SIGUE BLOQUEADA** — el trial venció el 25/08; se pasó a Free el 31/08 pero **no alcanzó**: 6 violaciones del 26 al 31/08 (cuota 0 + el HEC siguió ingiriendo) y Free no tiene reset key. Perdidos además auth, alerting y API remota | `splunk list licenser-messages` en `.20.200`. **Salida: licencia Developer** (§2.1.e); si no, vuelve sola el **12/09**. Todo en `LICENCIA-Y-THOUSANDEYES.md` |
-| ThousandEyes — paneles | **escritos** — filas 5 y 6 de `dashboard-go2.xml` contra OTel Data Model v2 | org propia `SILK TECH SRL - 178`, región US2, 2 agentes online |
+| **Licencia de Splunk** | **RESUELTA 2026-09-04** — Partner NFR Enterprise, **50 GB/día**, vence 2027-09-04. `licenseState: OK` | el archivo llegó **traducido al español** por el navegador (6 features + un espacio en la firma) y hubo que reconstruirlo. **Pedirla siempre como adjunto `.license`.** No va al repo: es público. Detalle en `LICENCIA-Y-THOUSANDEYES.md` §2.1.e-bis |
+| ThousandEyes — paneles | **en el dashboard del Go2, filtrados al Go2** — token `te_agent` define el agente en un solo lugar | org propia `SILK TECH SRL - 178`, región US2. **Un solo test involucra al robot**: `Agent to Agent Test`. De 34 tests de la org, el puente trae 8 (los de red) |
 | ThousandEyes — camino oficial | **bloqueado por infra** — TE exige 443 + cert de CA pública + DNS resoluble, y valida el alcance al crear el stream | no alcanza abrir `:8088`: hace falta reverse proxy + NAT + allowlist de 12 IPs. **Plan completo: `LICENCIA-Y-THOUSANDEYES.md` §5** |
-| ThousandEyes — puente | **corriendo desde 2026-09-01** — `robot-splunk-docs/te-poller/`, unit `te-poller` **en esta PC** (`enabled`), 13 tests, ruff limpio. **Temporal por diseño** | consumo de licencia medido: **<5 KB/día**, no mueve la aguja. Emite los mismos nombres y unidades que el exportador oficial → los paneles no distinguen la fuente. Falta probar un reboot y, a futuro, mudarlo al server |
+| ThousandEyes — puente | **corriendo** — `robot-splunk-docs/te-poller/`, unit `te-poller` **en esta PC** (`active`+`enabled`), **19 tests**, ruff limpio. **Temporal por diseño** | consumo medido **<5 KB/día**. Emite los mismos nombres y unidades que el exportador oficial → los paneles no distinguen la fuente. Además emite el **inventario del agente** (`thousandeyes:agent`), que el stream oficial NO reemplaza. Falta probar un reboot y mudarlo al server |
+| **Dashboard del Go2** | **funcionando** — 16 paneles: telemetría, foto, cámara MJPEG, enlace TE y estado del agente | refresh por tipo: singles 10 s · tablas 20 s · gráficos 30 s · TE 60 s. La cadencia la marca el test de TE (120 s), no el refresh |
 
 ---
 
@@ -129,6 +130,19 @@ contradecían entre sí.
 | `G1_FASES_Y_CREAR_SKILLS.md` | cita `~/Desktop/CONTROL_POR_VOZ_G1.md` | Ruta muerta desde el renombre del 27-08 |
 | 4 docs de control del G1 | el mismo roadmap de fases 0-5, tres veces | Consolidado acá. Dos borrados |
 
+**Correcciones del 2026-09-01 al 09-04** (sesión de licencia + ThousandEyes):
+
+| Documento | Decía | Realidad |
+|---|---|---|
+| `PLAN.md` §5.1 | *"500 MB/día hasta el 25 de agosto"* | **50 GB/día** hasta 2027-09-04 (Partner NFR). El análisis de volumen sigue válido; el presupuesto ya no manda |
+| `PLAN.md` §5.2 | *"El trial vence el 25/08"* | Venció, y **dejó la búsqueda muerta 10 días**: con la cuota en 0 el HEC siguió ingiriendo y generó **una violación por día** |
+| `PLAN.md` §11 paso 13 | *"si el trial cae a Free se pierde alerting"* | Se pasó a Free y se perdió; **recuperado** con la NFR (`Alerting`, `ScheduledAlerts`) |
+| `PLAN.md` §12 | *"¿cuánto consume la otra persona?"* — abierto | **~138 MB/día**, telemetría Cisco (WLC 9800 + CURWB) por HEC |
+| `PLAN.md` §2.3 | el contenedor de TE del Jetson es **"(Cisco)"**, implícitamente ajeno | Está en la org **propia** `SILK TECH SRL - 178`, con admin nuestro |
+| `PLAN.md` §388 | *"Contenedor ThousandEyes (IOx) en el IR1101: RUNNING"* | El agente `LAB-IR-1101` figura **offline desde ~2026-08-22**, igual que el del Jetson |
+| Este documento, 2026-08-31 | *"la app de Splunkbase hace pull, no expone nada"* | **Falso**: la app no hace pull. Los **dos** caminos oficiales son push a HEC |
+
+
 **Además:** 14 menciones de `192.168.123.99` siguen repartidas por los docs. Esa IP ya no
 existe: esta PC es `192.168.20.99`. `IPS-Y-DONDE-CAMBIARLAS.md` ya lo sabe, el resto no.
 
@@ -144,6 +158,12 @@ renombre los tocó a todos. No sirven para saber qué está fresco.
 2. **`REDEPLOY-EN-EL-ROBOT.md` sin ejecutar.** Los clones en el robot tienen los nombres
    viejos de antes del renombre del 27-08. Es lo primero cuando el robot vuelva, y nada de
    campo funciona hasta que se haga. **Nunca se probó contra el robot real.**
+
+3. **ThousandEyes por el camino oficial** necesita DNS público, certificado de CA pública,
+   reverse proxy en 443 y NAT — o sea, gente de infraestructura. Mientras tanto corre el
+   puente `te-poller` (§5.5). Plan de migración: `LICENCIA-Y-THOUSANDEYES.md` §5.
+
+*(La licencia de Splunk dejó de bloquear el 2026-09-04: Partner NFR, 50 GB/día.)*
 
 Todo lo que **no** necesita robot está en §7 y §8, y es lo que conviene hacer mientras.
 
@@ -236,6 +256,33 @@ manipulación, sino locomoción autónoma con un objetivo simple.
 
 El Go2 comparte con el G1 el intérprete de comandos y el transporte, pero **no** el track de
 manipulación (nada de GR00T, nada de SONIC).
+
+---
+
+### 5.5. Observabilidad — un tablero por robot
+
+**Decidido el 2026-09-04.** El modelo es **un dashboard de Splunk por robot**, no uno
+compartido con selector. `dashboard-go2.xml` es el primero y define el patrón:
+
+| Pieza | Cómo se hace |
+|---|---|
+| Identidad del robot | token `<init><set token="te_agent">` — un solo lugar para el nombre del agente de TE |
+| Telemetría | `index=go2-robot-data`, un índice y un token HEC **por robot** |
+| Enlace | métricas de ThousandEyes filtradas por agente, no por test: tests nuevos entran solos |
+| Estado del agente | `sourcetype=thousandeyes:agent` — el único panel que dice algo con el robot apagado |
+| Video | `<img>` a Frigate, **cero licencia** |
+| Foto | estático de Splunk (`/static/app/search/`), mismo origen, sin Trusted Domains |
+| Refresh | por tipo: singles 10 s · tablas 20 s · gráficos 30 s · TE 60 s |
+
+**Para el G1 se clona el XML y se cambian el token, el índice y la foto.** Lo que hace que
+eso sea barato es que nada está hardcodeado por test ni por panel.
+
+Pendiente declarado: **la estética.** El tablero prioriza que el dato esté y sea correcto;
+la prolijidad visual es una pasada aparte y posterior.
+
+> 📌 El refresh **no consume licencia** — Splunk cobra bytes indexados, no búsquedas. El
+> límite real de frescura es el **intervalo del test en ThousandEyes** (hoy 120 s), no el
+> refresh ni el poller. `LICENCIA-Y-THOUSANDEYES.md` §6.7.
 
 ---
 
@@ -571,6 +618,9 @@ abrir `/hooks` una vez recarga la config).
 | **Cómo separar los dos robots** (dominio DDS vs interfaz) | abierta — bloquea 4 pasos | `docs/SEPARAR_ROBOTS_MULTIPLES.md` (AI-VL) y `robot-video-pipeline/docs/DOS-ROBOTS.md` (video) |
 | **Video on-demand vs continuo** en campo | abierta | §5.2 |
 | **Profundidad del G1**: deproyección clásica vs aprendizaje | abierta, depende de qué cámara trae | §6.3 |
+| **ThousandEyes: exponer el HEC a internet** | abierta — es el único camino oficial | `LICENCIA-Y-THOUSANDEYES.md` §5.2 |
+| **Los 26 tests de TE que no llegan a Splunk** (M365, DNS, BGP, page-load) | abierta — son de IT corporativo, ¿van a otro tablero? | `LICENCIA-Y-THOUSANDEYES.md` §6.1 |
+| **Dónde vive `te-poller`**: esta PC vs el server de Splunk | abierta — hoy en la PC, que se apaga | `te-poller/README.md` |
 
 Sobre el transporte, un matiz que hay que tener presente: `ROBOT_CONTROL.md` fase 2 pide
 construir el ejecutor **abstraído del transporte** *"para que ROS2/Nav2 pueda entrar después"*,
