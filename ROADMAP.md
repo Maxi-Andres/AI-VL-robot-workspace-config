@@ -96,14 +96,14 @@ hace distinto de cualquier enlace del Go2, y tiene tres consecuencias:
 | HEC de Splunk | **abierto y sano** | `192.168.20.200:8088` responde `{"text":"HEC is healthy","code":17}` |
 | Video: mitad del robot | **construida** — encode por hardware + push RTMP | `robot-video-pipeline/robot/run-video.sh` con `nvv4l2h264enc` |
 | Video: mitad de HQ | **corriendo** — mediamtx + Frigate 0.14.1 | contenedor `frigate` healthy, mediamtx en `:8554/:8888/:8889/:1935` |
-| Video: el stream | **caído** — 0 fps | API de Frigate: `"robot": {"fps": 0.0}` |
+| Video: el stream | **FUNCIONANDO desde 2026-09-09** — 5.1 fps estables | `ESTAB 192.168.20.99:1935 ← 10.1.254.18` (robot por el túnel); Frigate `camera_fps=5.1`. Destrabado con `SERVER_ONLY=1` en la unidad de usuario de HQ |
 | Relay de comandos | **construido** — allowlist + clamp + dead-man | `robot-command-relay/relay_server.py` + tests |
 | Control por voz, una acción | **funcionando** en el Go2 | `docs/COMO_USAR_VOZ_ROBOT.md`, `robot_executor` |
 | Control por voz, secuencia | **no existe** | el intérprete devuelve **un** skill, no una lista |
 | Persistencia de la app (Redis/Mongo) | **no existe** | `grep -riE 'redis\|pymongo\|mongo\|minio'` en AI-VL → 0 hits |
 | Tests | **70 pasan, 6 xfail estrictos** (eran 30 y 4 antes del 28-08) | executor 24+2 · camera_bridge 11+1 · relay 6+2 · video-pipeline 9+1 · backend 10 · iacore 10 |
 | Commit gate | verde en los 7 repos con código | `pre-commit run` rc=0 en los 7 |
-| Robot | **apagado ahora, pero se prende** | sin respuesta a ping el 09-09; los agentes de TE `go2-jetson-01` y `LAB-IR-1101` reportan último contacto **2026-09-09 00:10 UTC** |
+| Robot | **EN LÍNEA y redesplegado 2026-09-09** — en campo, por el túnel del IR1101 | `10.1.254.18` responde; los tres servicios `active`. `.123.18` no responde porque no estamos en su LAN |
 | **GPS del robot** | **hardware disponible, sin configurar** — antena activa + módulo celular en el IR1101 | el chasis base del IR1101 **no** tiene GNSS: lo da el módulo. Plan en `PLAN-CONECTIVIDAD-ROBOTS.md` **Fase 6** |
 | **Telemetría CURWB en Splunk** | **existe y nadie la había registrado** — `index=wlc9800`, sourcetype `cisco:urwb:telemetry`, 55 MB/día desde `192.168.20.20`; más 83 MB/día del WLC 9800 | `license_usage.log` el 2026-08-31. Son los radios del enlace del G1 (§1): material para el pendiente de validación §6.4 |
 | **Licencia de Splunk** | **RESUELTA 2026-09-04** — Partner NFR Enterprise, **50 GB/día**, vence 2027-09-04. `licenseState: OK` | el archivo llegó **traducido al español** por el navegador (6 features + un espacio en la firma) y hubo que reconstruirlo. **Pedirla siempre como adjunto `.license`.** No va al repo: es público. Detalle en `LICENCIA-Y-THOUSANDEYES.md` §2.1.e-bis |
@@ -154,11 +154,15 @@ renombre los tocó a todos. No sirven para saber qué está fresco.
 
 ## 4. Lo que bloquea ahora
 
-1. **El robot está apagado.** Bloquea todo lo de campo: video, telemetría end-to-end,
-   el primer `move` supervisado, el redeploy.
-2. **`REDEPLOY-EN-EL-ROBOT.md` sin ejecutar.** Los clones en el robot tienen los nombres
-   viejos de antes del renombre del 27-08. Es lo primero cuando el robot vuelva, y nada de
-   campo funciona hasta que se haga. **Nunca se probó contra el robot real.**
+1. ~~**El robot está apagado.**~~ Volvió el **2026-09-09** y está en campo, alcanzable por el
+   túnel en `10.1.254.18`. Lo que sigue bloqueado por *no tenerlo al lado*: el primer `move`
+   supervisado y la validación de CURWB con el cable desenchufado.
+2. ~~**`REDEPLOY-EN-EL-ROBOT.md` sin ejecutar.**~~ ✅ **HECHO el 2026-09-09**, contra el robot
+   real y por primera vez. Los tres servicios quedaron `active`, el video llega y la
+   telemetría también. El runbook tenía **tres errores** que se corrigieron sobre la marcha:
+   clonaba la rama por defecto (atrasada 3-8 commits) en vez de `dev`; daba la IP de LAN en
+   vez de la del túnel; y no avisaba que **los `.env` rescatados traen rutas del repo viejo
+   adentro**, que fue lo que tiró abajo el relay.
 
 3. **ThousandEyes por el camino oficial** necesita DNS público, certificado de CA pública,
    reverse proxy en 443 y NAT — o sea, gente de infraestructura. Mientras tanto corre el
@@ -189,14 +193,23 @@ Presupuesto medido: **40 MB/día** contra un techo de 500 MB/día compartido. 8%
 
 ### 5.2. Video — el stream está caído, y hay un síntoma abierto
 
-**Primero, lo que está roto ahora mismo:** el pipeline flapea cada ~11 s. `go2_jpeg_stream`
-no recibe frames, sale, ffmpeg da EOF, el supervisor reintenta. Frigate conecta y encuentra el
-path vacío. Causa: no hay robot en la red **y** la unidad de usuario corre en modo captura
-local en vez de `SERVER_ONLY=1`.
+> ✅ **RESUELTO el 2026-09-09. El video llega: 5.1 fps estables.**
+>
+> - [x] ~~`SERVER_ONLY=1` en la unidad de usuario~~ — aplicado como drop-in en
+>       `~/.config/systemd/user/robot-video-pipeline.service.d/override.conf`.
+>
+> **La causa real no era solo el flapeo.** Con el robot publicando por RTMP, la unidad de
+> usuario de HQ seguía en captura local y **publicaba al mismo path `robot`**. Un path de
+> mediamtx admite **un solo publisher**, así que el `rtmpsink` del robot conectaba y moría
+> con `Could not write to resource`.
+>
+> ⚠️ **Y la trampa:** `run.sh` de esa unidad **no corre solo la captura, también levanta
+> mediamtx**. Pararla para liberar el path mata al receptor. El arreglo es `SERVER_ONLY=1`,
+> no `stop`. Detalle en `REDEPLOY-EN-EL-ROBOT.md`.
 
-- [ ] Poner `SERVER_ONLY=1` en la unidad de usuario `robot-video-pipeline`. Deja de ensuciar
-      el journal y es el modo correcto ahora que la captura vive en el robot. No trae video
-      por sí solo.
+**Lo que decía antes (histórico):** el pipeline flapea cada ~11 s. `go2_jpeg_stream`
+no recibe frames, sale, ffmpeg da EOF, el supervisor reintenta. Frigate conecta y encuentra el
+path vacío.
 
 **Después, el síntoma abierto** (de `ESTADO-Y-CONTINUACION.md` §4.4, que sigue vigente): el
 video se congela ~1 s cada ~4 s. Hipótesis principal: las ráfagas de keyframe del H.264
@@ -218,6 +231,12 @@ Experimentos en orden de costo — todos son editar `robot/video.env` y reinicia
 
 Lo que ya **no** es (descartado con medición): no es la cámara (12-14 fps), no es CPU (load
 0,3 de 4 cores), no es el tee estrangulando, no es el descarte de frames.
+
+> 🔎 **Observado el 2026-09-09, sin diagnosticar:** el journal del robot tira
+> `Corrupt JPEG data: premature end of data segment` cada 20-30 s de forma constante, y a
+> veces `N extraneous bytes before marker 0xdN`. Es del robot leyendo **su propia** cámara
+> por DDS — no es la red a HQ. Puede estar emparentado con el congelamiento de §4.4 de
+> `ESTADO-Y-CONTINUACION.md`. Mirarlo cuando se retome el tema del video.
 
 Más adelante:
 
