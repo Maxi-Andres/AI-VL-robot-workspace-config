@@ -103,7 +103,8 @@ hace distinto de cualquier enlace del Go2, y tiene tres consecuencias:
 | Persistencia de la app (Redis/Mongo) | **no existe** | `grep -riE 'redis\|pymongo\|mongo\|minio'` en AI-VL → 0 hits |
 | Tests | **70 pasan, 6 xfail estrictos** (eran 30 y 4 antes del 28-08) | executor 24+2 · camera_bridge 11+1 · relay 6+2 · video-pipeline 9+1 · backend 10 · iacore 10 |
 | Commit gate | verde en los 7 repos con código | `pre-commit run` rc=0 en los 7 |
-| Robot | **apagado / fuera de red** | `.123.161` sin respuesta; único vecino en VLAN 20 es el router |
+| Robot | **apagado ahora, pero se prende** | sin respuesta a ping el 09-09; los agentes de TE `go2-jetson-01` y `LAB-IR-1101` reportan último contacto **2026-09-09 00:10 UTC** |
+| **GPS del robot** | **hardware disponible, sin configurar** — antena activa + módulo celular en el IR1101 | el chasis base del IR1101 **no** tiene GNSS: lo da el módulo. Plan en `PLAN-CONECTIVIDAD-ROBOTS.md` **Fase 6** |
 | **Telemetría CURWB en Splunk** | **existe y nadie la había registrado** — `index=wlc9800`, sourcetype `cisco:urwb:telemetry`, 55 MB/día desde `192.168.20.20`; más 83 MB/día del WLC 9800 | `license_usage.log` el 2026-08-31. Son los radios del enlace del G1 (§1): material para el pendiente de validación §6.4 |
 | **Licencia de Splunk** | **RESUELTA 2026-09-04** — Partner NFR Enterprise, **50 GB/día**, vence 2027-09-04. `licenseState: OK` | el archivo llegó **traducido al español** por el navegador (6 features + un espacio en la firma) y hubo que reconstruirlo. **Pedirla siempre como adjunto `.license`.** No va al repo: es público. Detalle en `LICENCIA-Y-THOUSANDEYES.md` §2.1.e-bis |
 | ThousandEyes — paneles | **en el dashboard del Go2, filtrados al Go2** — token `te_agent` define el agente en un solo lugar | org propia `SILK TECH SRL - 178`, región US2. **Un solo test involucra al robot**: `Agent to Agent Test`. De 34 tests de la org, el puente trae 8 (los de red) |
@@ -161,7 +162,7 @@ renombre los tocó a todos. No sirven para saber qué está fresco.
 
 3. **ThousandEyes por el camino oficial** necesita DNS público, certificado de CA pública,
    reverse proxy en 443 y NAT — o sea, gente de infraestructura. Mientras tanto corre el
-   puente `te-poller` (§5.5). Plan de migración: `LICENCIA-Y-THOUSANDEYES.md` §5.
+   puente `te-poller` (§5.6). Plan de migración: `LICENCIA-Y-THOUSANDEYES.md` §5.
 
 *(La licencia de Splunk dejó de bloquear el 2026-09-04: Partner NFR, 50 GB/día.)*
 
@@ -259,7 +260,41 @@ manipulación (nada de GR00T, nada de SONIC).
 
 ---
 
-### 5.5. Observabilidad — un tablero por robot
+### 5.5. GPS — hardware disponible, sin configurar
+
+**Planificado el 2026-09-09.** Hay **antena GPS activa** (SMA, base magnética, 2.90 m) y el
+**módulo celular pluggable del IR1101 está confirmado** — que es de donde sale el GNSS.
+
+> 🔑 **El chasis base del IR1101 no tiene receptor GNSS.** Lo aporta únicamente el módulo
+> celular, que trae el conector SMA `GPS`. Sin módulo la antena no va a ningún lado.
+
+Eléctricamente la antena es casi idéntica a la `GPS-ACT-ANTM-SMA` que Cisco lista para este
+router (5 V entra en su rango de bias 3–5 VDC, 29±3 dB vs 27 típ, 50 Ω). **Falta confirmar el
+género del conector**: tiene que ser SMA macho.
+
+**Lo que no es eléctrico y sí es problema:** la base magnética **no pega en el Go2** —
+aluminio y plástico, sin superficie ferrosa— y hay 2.90 m de cable sobrante sobre algo que
+camina.
+
+**Las dos trampas, anotadas antes de caer en ellas:**
+
+1. **NMEA no da grados decimales.** Viene en `ddmm.mmmm`: `3436.1234` es **34.60206**, no
+   34.36. Dividir por 100 da un número plausible y **mal por decenas de kilómetros**. Misma
+   clase de trampa que la latencia de TE en ms vs segundos.
+2. **1 Hz es mucho más de lo necesario** (~13 MB/día). Downsamplear **en el receptor**, no en
+   Splunk: la licencia cuenta bytes ingresados.
+
+Del lado de Splunk: **no** un índice nuevo — `go2-robot-data` con sourcetype `robot:gps`,
+mismo token, siguiendo la regla de un índice por robot. En el dashboard, panel `<map>` con
+`geostats`, mostrando `hdop` y `sats` al lado: una posición con pocos satélites es una
+posición inventada y el panel tiene que dejarlo ver.
+
+**Receta completa, con la config del IR1101 y el orden de los 8 pasos:**
+`robot-splunk-docs/PLAN-CONECTIVIDAD-ROBOTS.md` **Fase 6**.
+
+---
+
+### 5.6. Observabilidad — un tablero por robot
 
 **Decidido el 2026-09-04.** El modelo es **un dashboard de Splunk por robot**, no uno
 compartido con selector. `dashboard-go2.xml` es el primero y define el patrón:
@@ -621,6 +656,8 @@ abrir `/hooks` una vez recarga la config).
 | **ThousandEyes: exponer el HEC a internet** | abierta — es el único camino oficial | `LICENCIA-Y-THOUSANDEYES.md` §5.2 |
 | **Los 26 tests de TE que no llegan a Splunk** (M365, DNS, BGP, page-load) | abierta — son de IT corporativo, ¿van a otro tablero? | `LICENCIA-Y-THOUSANDEYES.md` §6.1 |
 | **Dónde vive `te-poller`**: esta PC vs el server de Splunk | abierta — hoy en la PC, que se apaga | `te-poller/README.md` |
+| **GPS: cómo llega el NMEA a Splunk** — receptor propio vs input UDP vs app IOx | abierta — recomendado el receptor, mismo patrón que `te-poller` | `PLAN-CONECTIVIDAD-ROBOTS.md` §6.4 |
+| **GPS: cómo se sujeta la antena al Go2** | abierta — el imán no pega, es mecánico | `PLAN-CONECTIVIDAD-ROBOTS.md` §6.2 |
 
 Sobre el transporte, un matiz que hay que tener presente: `ROBOT_CONTROL.md` fase 2 pide
 construir el ejecutor **abstraído del transporte** *"para que ROS2/Nav2 pueda entrar después"*,
