@@ -32,8 +32,8 @@ citados desde el código.
 | Qué puerto usa cada máquina y qué cruza el enlace de campo | `robot-splunk-docs/PUERTOS.md` |
 
 **Convención de ramas (2026-09-10):** `dev` es desarrollo; **el robot y cualquier despliegue
-usan la rama principal**. Se mergea `dev` → principal con `--ff-only` y el robot hace
-`git pull` como siempre. ⚠️ `robot-command-relay` usa `master` y el resto `main` — pendiente
+usan la rama principal**. Se mergea `dev` → principal (por PR) y el robot hace `git pull`
+como siempre. Aplicado el 10-09 en los tres repos del robot. ⚠️ `robot-command-relay` usa `master` y el resto `main` — pendiente
 unificar desde GitHub, porque rompe cualquier `for` sobre los repos.
 
 **Regla de mantenimiento:** si este documento y otro se contradicen, gana este — y el otro
@@ -102,7 +102,7 @@ hace distinto de cualquier enlace del Go2, y tiene tres consecuencias:
 | HEC de Splunk | **abierto y sano** | `192.168.20.200:8088` responde `{"text":"HEC is healthy","code":17}` |
 | Video: mitad del robot | **construida** — encode por hardware + push RTMP | `robot-video-pipeline/robot/run-video.sh` con `nvv4l2h264enc` |
 | Video: mitad de HQ | **corriendo** — mediamtx + Frigate 0.14.1 | contenedor `frigate` healthy, mediamtx en `:8554/:8888/:8889/:1935` |
-| Video: el stream | **FUNCIONANDO desde 2026-09-09** — 5.1 fps estables | `ESTAB 192.168.20.99:1935 ← 10.1.254.18` (robot por el túnel); Frigate `camera_fps=5.1`. Destrabado con `SERVER_ONLY=1` en la unidad de usuario de HQ |
+| Video: el stream | **FUNCIONANDO** — 5.1 fps estables, cola del NVR en 0 y sin descartes (2026-09-10) | `ESTAB 192.168.20.99:1935 ← 10.1.254.18`. Requirió **dos** arreglos: `SERVER_ONLY=1` en la unidad de HQ (09-09) y **capar `MJPEG_FPS`** (10-09), sin lo cual el stream directo ahogaba al RTMP |
 | **Comandos: micro tirones al caminar** | **abierto** — el robot avanza a tirones sobre LTE. NO es el video: apagarlo no mejoró | RTT al robot **46 ms de media, 95 de pico** (era **0,25 ms** en LAN) contra un `MOVE_RATE_HZ=10` = 100 ms. `command_sender` solo llama a `Move()` cuando llega un paquete, así que el jitter de la red se convierte en movimiento irregular. Ver `PUERTOS.md` §1 |
 | Relay de comandos | **construido** — allowlist + clamp + dead-man | `robot-command-relay/relay_server.py` + tests |
 | Control por voz, una acción | **funcionando** en el Go2 | `docs/COMO_USAR_VOZ_ROBOT.md`, `robot_executor` |
