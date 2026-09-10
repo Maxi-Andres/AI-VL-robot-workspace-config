@@ -29,6 +29,7 @@ citados desde el código.
 | El estándar de ingeniería (con el incidente detrás de cada regla) | `.claude/skills/cr/references/standard.md` |
 | Runbook para poner el robot al día tras el renombre | `robot-splunk-docs/REDEPLOY-EN-EL-ROBOT.md` |
 | Licencia vencida (31/08) y alta de ThousandEyes | `robot-splunk-docs/LICENCIA-Y-THOUSANDEYES.md` |
+| Qué puerto usa cada máquina y qué cruza el enlace de campo | `robot-splunk-docs/PUERTOS.md` |
 
 **Regla de mantenimiento:** si este documento y otro se contradicen, gana este — y el otro
 está roto y hay que arreglarlo. Si algo se termina, se tacha acá, no en cinco lugares.
@@ -97,6 +98,7 @@ hace distinto de cualquier enlace del Go2, y tiene tres consecuencias:
 | Video: mitad del robot | **construida** — encode por hardware + push RTMP | `robot-video-pipeline/robot/run-video.sh` con `nvv4l2h264enc` |
 | Video: mitad de HQ | **corriendo** — mediamtx + Frigate 0.14.1 | contenedor `frigate` healthy, mediamtx en `:8554/:8888/:8889/:1935` |
 | Video: el stream | **FUNCIONANDO desde 2026-09-09** — 5.1 fps estables | `ESTAB 192.168.20.99:1935 ← 10.1.254.18` (robot por el túnel); Frigate `camera_fps=5.1`. Destrabado con `SERVER_ONLY=1` en la unidad de usuario de HQ |
+| **Comandos: micro tirones al caminar** | **abierto** — el robot avanza a tirones sobre LTE. NO es el video: apagarlo no mejoró | RTT al robot **46 ms de media, 95 de pico** (era **0,25 ms** en LAN) contra un `MOVE_RATE_HZ=10` = 100 ms. `command_sender` solo llama a `Move()` cuando llega un paquete, así que el jitter de la red se convierte en movimiento irregular. Ver `PUERTOS.md` §1 |
 | Relay de comandos | **construido** — allowlist + clamp + dead-man | `robot-command-relay/relay_server.py` + tests |
 | Control por voz, una acción | **funcionando** en el Go2 | `docs/COMO_USAR_VOZ_ROBOT.md`, `robot_executor` |
 | Control por voz, secuencia | **no existe** | el intérprete devuelve **un** skill, no una lista |
