@@ -1,9 +1,15 @@
 # ROADMAP — la fuente de la verdad
 
-**Escrito el 2026-08-28.** Reemplaza y absorbe: `.claude/STATE.md`,
-`AI-VL-ecosystem/docs/CONTROL_POR_VOZ_G1.md`,
+**Escrito el 2026-08-28. Revisado contra el código el 2026-09-10.** Reemplaza y absorbe:
+`.claude/STATE.md`, `AI-VL-ecosystem/docs/CONTROL_POR_VOZ_G1.md`,
 `AI-VL-ecosystem/docs/ARQUITECTURA_ROBOT_G1_PROPUESTA.md` y
-`robot-splunk-docs/Telemetria-Splunk.md` (los cuatro borrados; están en el historial de git).
+`robot-splunk-docs/Telemetria-Splunk.md`.
+
+> ⚠️ **Tres de los cuatro están borrados; el cuarto no.** Verificado el 2026-09-10:
+> `ARQUITECTURA_ROBOT_G1_PROPUESTA.md` **sigue existiendo y sigue trackeado** (15 KB), y lo
+> citan `AI-VL-ecosystem/ROBOT_CONTROL.md` y `docs/G1_FASES_Y_CREAR_SKILLS.md`. O sea: el
+> quinto backlog que este documento venía a eliminar sigue en pie y con dos referencias
+> vivas. Pendiente en §7.6.
 
 Antes había **seis backlogs** que se contradecían entre sí. Este es el único.
 
@@ -33,8 +39,22 @@ citados desde el código.
 
 **Convención de ramas (2026-09-10):** `dev` es desarrollo; **el robot y cualquier despliegue
 usan la rama principal**. Se mergea `dev` → principal (por PR) y el robot hace `git pull`
-como siempre. Aplicado el 10-09 en los tres repos del robot. ⚠️ `robot-command-relay` usa `master` y el resto `main` — pendiente
-unificar desde GitHub, porque rompe cualquier `for` sobre los repos.
+como siempre. Aplicado el 10-09 en los **tres repos de código del robot**, y solo en ésos.
+
+Estado real de las 11 ramas, verificado el 2026-09-10 — la convención está a medias:
+
+| Repo | Rama hoy | |
+|---|---|---|
+| `robot-video-pipeline`, `robot-telemetry-agent` | `main` | ✅ convención aplicada |
+| `robot-command-relay` | **`master`** | ⚠️ el único con `master`; hay que unificarlo desde GitHub |
+| `robot-ecosystem` (umbrella), `robot-splunk-docs` | `dev` | ⚠️ sin mergear a la principal |
+| `unitree_ros2` | `feature/dev2` | ⚠️ y tiene código que corre en el robot |
+| `AI-VL-ecosystem` + `AI-VL-core` + `AI-VL-backend` | `feature/both-robots-same-time` | — |
+| `AI-VL-frontend` | **`feature/both-robots-same-tiem`** | ⚠️ typo, ver §7.6 |
+| `unitree_sdk2` | vendor | — |
+
+Las dos que muerden: `master` vs `main` y el typo del frontend **rompen cualquier `for` sobre
+los repos**, que es exactamente como está escrito el health check de §8.
 
 **Regla de mantenimiento:** si este documento y otro se contradicen, gana este — y el otro
 está roto y hay que arreglarlo. Si algo se termina, se tacha acá, no en cinco lugares.
@@ -94,7 +114,10 @@ hace distinto de cualquier enlace del Go2, y tiene tres consecuencias:
 
 ---
 
-## 2. Estado real — verificado el 2026-09-04
+## 2. Estado real — verificado el 2026-09-10
+
+*(Las filas de video, robot, HEC, tests y comandos se recomprobaron el 10-09 contra los
+servicios vivos; el resto viene del 09-04.)*
 
 | Capacidad | Estado | Verificado cómo |
 |---|---|---|
@@ -103,12 +126,12 @@ hace distinto de cualquier enlace del Go2, y tiene tres consecuencias:
 | Video: mitad del robot | **construida** — encode por hardware + push RTMP | `robot-video-pipeline/robot/run-video.sh` con `nvv4l2h264enc` |
 | Video: mitad de HQ | **corriendo** — mediamtx + Frigate 0.14.1 | contenedor `frigate` healthy, mediamtx en `:8554/:8888/:8889/:1935` |
 | Video: el stream | **FUNCIONANDO** — 5.1 fps estables, cola del NVR en 0 y sin descartes (2026-09-10) | `ESTAB 192.168.20.99:1935 ← 10.1.254.18`. Requirió **dos** arreglos: `SERVER_ONLY=1` en la unidad de HQ (09-09) y **capar `MJPEG_FPS`** (10-09), sin lo cual el stream directo ahogaba al RTMP |
-| **Comandos: micro tirones al caminar** | **abierto** — el robot avanza a tirones sobre LTE. NO es el video: apagarlo no mejoró | RTT al robot **46 ms de media, 95 de pico** (era **0,25 ms** en LAN) contra un `MOVE_RATE_HZ=10` = 100 ms. `command_sender` solo llama a `Move()` cuando llega un paquete, así que el jitter de la red se convierte en movimiento irregular. Ver `PUERTOS.md` §1 |
+| **Comandos: micro tirones al caminar** | **abierto — y ahora hay DOS causas candidatas, no una.** NO es el video: apagarlo no mejoró | (a) **Red:** RTT al robot **46 ms de media, 95 de pico** (era **0,25 ms** en LAN) contra un `MOVE_RATE_HZ=10` = 100 ms. `command_sender` solo llama a `Move()` cuando llega un paquete, así que el jitter se convierte en movimiento irregular. Ver `PUERTOS.md` §1. (b) **Código, encontrado el 2026-09-10:** el `RelayTransport` —que es justamente el camino del robot en campo— **inyecta un `stop_move` en cada refresh de teleop**, produciendo move-halt-move-halt. Es un defecto, no jitter, y está capturado por un xfail (§7.3). **Descartar (b) antes de seguir midiendo (a): es gratis y no necesita el robot en LAN** |
 | Relay de comandos | **construido** — allowlist + clamp + dead-man | `robot-command-relay/relay_server.py` + tests |
 | Control por voz, una acción | **funcionando** en el Go2 | `docs/COMO_USAR_VOZ_ROBOT.md`, `robot_executor` |
 | Control por voz, secuencia | **no existe** | el intérprete devuelve **un** skill, no una lista |
 | Persistencia de la app (Redis/Mongo) | **no existe** | `grep -riE 'redis\|pymongo\|mongo\|minio'` en AI-VL → 0 hits |
-| Tests | **70 pasan, 6 xfail estrictos** (eran 30 y 4 antes del 28-08) | executor 24+2 · camera_bridge 11+1 · relay 6+2 · video-pipeline 9+1 · backend 10 · iacore 10 |
+| Tests | **105 pasan, 8 xfail estrictos** (eran 30 y 4 antes del 28-08; 70 y 6 el 28-08) | corrido el 2026-09-10: executor **59+4** · camera_bridge 11+1 · relay 6+2 · video-pipeline 9+1 · backend 10 · iacore 10. El crecimiento es todo del executor: `test_deadman_contract.py`, que **destapó dos defectos nuevos en el `RelayTransport`** — ver §7.3 |
 | Commit gate | verde en los 7 repos con código | `pre-commit run` rc=0 en los 7 |
 | Robot | **EN LÍNEA y redesplegado 2026-09-09** — en campo, por el túnel del IR1101 | `10.1.254.18` responde; los tres servicios `active`. `.123.18` no responde porque no estamos en su LAN |
 | **GPS del robot** | **hardware disponible, sin configurar** — antena activa + módulo celular en el IR1101 | el chasis base del IR1101 **no** tiene GNSS: lo da el módulo. Plan en `PLAN-CONECTIVIDAD-ROBOTS.md` **Fase 6** |
@@ -151,6 +174,16 @@ contradecían entre sí.
 | Este documento, 2026-08-31 | *"la app de Splunkbase hace pull, no expone nada"* | **Falso**: la app no hace pull. Los **dos** caminos oficiales son push a HEC |
 | `REDEPLOY-EN-EL-ROBOT.md`, 2026-08-27 | `git clone` sin rama | Durante un tiempo la rama por defecto estaba **3-8 commits atrás** de `dev` y el clone dejaba código viejo sin fallar. **Resuelto el 10-09**: `dev` mergeado a la principal, el robot vive en `main` |
 
+**Correcciones del 2026-09-10** (auditoría de este documento contra el código). Las cinco son
+de **este archivo**, que es lo que las hace graves: la fuente de la verdad estaba desfasada.
+
+| Decía | Realidad (2026-09-10) |
+|---|---|
+| Cabecera: los cuatro docs absorbidos *"borrados"* | Tres sí; `ARQUITECTURA_ROBOT_G1_PROPUESTA.md` sigue trackeado y con **dos referencias vivas**. Pendiente en §7.6 |
+| §2: *"70 pasan, 6 xfail — executor 24+2"* | **105 pasan, 8 xfail** — el executor tiene 59+4. Nadie actualizó el número al agregar `test_deadman_contract.py` |
+| §7.3: *"Los 4 xfails estrictos"* | Son **8**, y los dos que faltaban son **P0 en el camino del robot en campo** (`RelayTransport`). Un xfail escrito y no registrado acá es un defecto que nadie va a priorizar |
+| §7.1: `SAFE_MODE` en `:89`, request en `:1260` | `:90` y `:1256`. Las cuatro de `# noqa: S104` sí estaban exactas |
+| §0: *"Aplicado el 10-09 en los tres repos del robot"* | Cierto pero incompleto: `robot-ecosystem`, `robot-splunk-docs` y `unitree_ros2` quedaron fuera. Tabla completa de las 11 ramas en §0 |
 
 **Además:** 14 menciones de `192.168.123.99` siguen repartidas por los docs. Esa IP ya no
 existe: esta PC es `192.168.20.99`. `IPS-Y-DONDE-CAMBIARLAS.md` ya lo sabe, el resto no.
@@ -418,12 +451,26 @@ su §8 y el pendiente también figura en `RED-Y-DDS.md` §9.
 
 ## 7. Track C — App AI-VL y seguridad
 
-### 7.1. P0 de seguridad — verificados línea por línea el 2026-08-28
+### 7.1. P0 de seguridad — reverificados línea por línea el 2026-09-10
 
-- [ ] **`SAFE_MODE` fail-safe.** `robot_executor_service.py:89` es
-      `_as_bool(os.environ.get("SAFE_MODE"), False)` → **default permisivo**. Y `:1260` deja
-      que un request que omite el campo tome el camino permisivo. Poner `True` en los dos
-      lados y alinear el docstring de `:16`, que ya afirma lo contrario.
+**Los cuatro siguen abiertos**, más **dos nuevos** que salieron de los xfails de §7.3. Las
+referencias de línea de `robot_executor_service.py` corrieron una posición desde el 28-08 y
+están corregidas acá; las cuatro de `# noqa: S104` se verificaron exactas.
+
+- [ ] **`RelayTransport` inyecta un halt en cada refresh.** `robot_executor_service.py:935`
+      postea `stop_move` incondicionalmente al salir del loop. Copiar la guarda
+      `if reached_deadline` que Go2 (`:439`) y G1 (`:751`) ya tienen. **Es también causa
+      candidata de los micro tirones (§2).** No necesita robot.
+- [ ] **`RelayTransport` no clampea la duración.** `robot_executor_service.py:942`: falta el
+      `max(0.1, min(step, MAX_STEP_S))` de `:449` y `:761`, así que `duration_s=60` es una
+      caminata de 60 s que el dead-man del robot **no** corta. Violación directa de
+      *"[blocker] Bounded motion, always"*, en el camino del robot en campo. No necesita robot.
+- [ ] **`SAFE_MODE` fail-safe.** `robot_executor_service.py:90` es
+      `_as_bool(os.environ.get("SAFE_MODE"), False)` → **default permisivo**. Y `:1256`
+      (`effective_safe = req_safe if isinstance(req_safe, bool) else SAFE_MODE`) deja que un
+      request que omite el campo tome el camino permisivo. Poner `True` en los dos lados y
+      alinear el docstring de `:16`, que **hoy afirma literalmente "`SAFE_MODE` (default on)"
+      — un [blocker] de §1 del estándar, docs contra código**.
 - [ ] **`continuous` fail-safe.** `go2_commands.py:127` y `g1_commands.py:279`:
       `bool(params.get("continuous", True))` → movimiento sin límite por default, desactivando
       el dead-man. Pasar a `False`; el xfail se da vuelta con eso.
@@ -465,17 +512,30 @@ su §8 y el pendiente también figura en `RED-Y-DDS.md` §9.
 Los repos **sin suite** bajaron de cuatro a dos: quedan `AI-VL-core` (tiene el contract test,
 pero nada de su inferencia) y `robot-telemetry-agent` (nada).
 
-### 7.3. Los 4 xfails estrictos
+### 7.3. Los 8 xfails estrictos
 
 Afirman el comportamiento **correcto** de defectos abiertos. `strict=True`: cuando arreglás el
 defecto el test pasa inesperadamente y **pytest falla**, avisándote de borrar el marcador.
 Arreglá el código, borrá el marcador — no borres el test.
 
-| Test | Defecto |
-|---|---|
-| `test_move_without_continuous_is_bounded` (×2 robots) | `continuous` default `True` |
-| `test_rate_limiter_does_not_allow_double_the_budget_across_a_boundary` | ventanas fijas dejan pasar 2× en el borde |
-| `test_token_comparison_is_constant_time` | el relay compara el token con `==` |
+Enumerados el 2026-09-10 corriendo `pytest -rxX` en los cuatro repos con suite. **Son 8, no 4:
+la lista anterior omitía los dos del `RelayTransport`**, que son los más graves de la tabla
+porque el relay es el único camino que puede mover al robot **en campo**.
+
+| Test | Repo | Defecto |
+|---|---|---|
+| `test_a_new_move_supersedes_the_previous_one_without_injecting_a_halt[relay]` | executor | **`RelayTransport._run_move_loop:935` postea `{'verb':'stop_move'}` incondicionalmente al salir del loop**, no solo cuando venció el deadline. Cada refresh de teleop inyecta un frenazo. Go2 (`:439`) y G1 (`:751`) lo guardan con `if reached_deadline`; el relay se copió sin esa guarda — §5 del estándar, tercera copia |
+| `test_an_absurd_duration_is_clamped_to_max_step[relay]` | executor | **`RelayTransport._start_move:942` no clampea la duración**: `deadline = now + (duration or DEFAULT_STEP_S)`, sin el `max(0.1, min(step, MAX_STEP_S))` que sí está en `:449` (Go2) y `:761` (G1). `duration_s=60` por el relay es una caminata de 60 s, y **el dead-man del robot no la salva** porque el loop lo sigue alimentando cada `_REFRESH_S` |
+| `test_move_without_continuous_is_bounded` (×2 robots) | executor | `continuous` default `True` — P0 de §7.1 |
+| `test_an_soi_with_no_eoi_does_not_grow_the_buffer_without_bound` (×2 copias) | camera_bridge, video-pipeline | el scanner MJPEG retiene los 5 MB de un frame sin EOI |
+| `test_rate_limiter_does_not_allow_double_the_budget_across_a_boundary` | relay | ventanas fijas dejan pasar 2× en el borde |
+| `test_token_comparison_is_constant_time` | relay | el relay compara el token con `==` |
+
+> 🔴 **Los dos primeros son P0 y no estaban en ninguna lista de P0.** Los dos violan
+> *"[blocker] Bounded motion, always"* del estándar §3, en el transporte del robot itinerante.
+> El primero es además causa candidata de los micro tirones (§2). Ninguno necesita el robot
+> para arreglarse: el fix es copiar la guarda y el clamp que los otros dos transportes ya
+> tienen, y los tests ya están escritos y en rojo.
 
 ### 7.3.b. Cobertura de tests — el mapa de lo que no está protegido
 
@@ -605,9 +665,19 @@ libreta de ideas; lo que se decide hacer sube acá.
 - [ ] Decidir qué hacer con `AI-VL-ecosystem/.mcp.json` y su hook en `settings.local.json`:
       inofensivo mientras las sesiones se abran desde `~/Desktop`, pero abrir desde ese
       directorio carga una config que indexa 4 de 11 repos.
+- [ ] **Terminar la convención de ramas del 10-09** (tabla completa en §0). Tres cosas:
+      renombrar `master` → `main` en `robot-command-relay` desde GitHub; mergear a la
+      principal `robot-ecosystem` y `robot-splunk-docs`, que siguen en `dev`; y decidir qué
+      pasa con `unitree_ros2`, que está en `feature/dev2` **y tiene código que corre en el
+      robot**. Mientras tanto ningún `for` sobre los repos puede asumir una rama.
 - [ ] **`AI-VL-frontend` está en la rama `feature/both-robots-same-tiem`** mientras sus tres
-      hermanos están en `...same-time`. Verificado hoy, sigue así. Va a molestar cuando los PR
-      suban juntos.
+      hermanos están en `...same-time`. Verificado el 2026-09-10, sigue así. Va a molestar
+      cuando los PR suban juntos.
+- [ ] **Cerrar `ARQUITECTURA_ROBOT_G1_PROPUESTA.md`**, que la cabecera de este documento daba
+      por borrado desde el 28-08 y sigue trackeado (ver el aviso de arriba de todo). Antes de
+      borrarlo hay que sacar las dos referencias vivas: `AI-VL-ecosystem/ROBOT_CONTROL.md` y
+      `docs/G1_FASES_Y_CREAR_SKILLS.md`. Si algo suyo todavía vale, sube a §6; si no, se borra
+      y git lo recuerda.
 - [ ] Sacar las 14 menciones de `192.168.123.99` de los docs (§3).
 
 ---
@@ -645,9 +715,15 @@ for r in AI-VL-ecosystem/AI-VL-core AI-VL-ecosystem/AI-VL-backend \
 done
 (cd AI-VL-ecosystem/AI-VL-frontend && bunx eslint src && bun run typecheck)
 
-# Tests: 24+2 y 6+2
-(cd unitree_ros2/robot_executor && python3 -m pytest -q)
-(cd robot-ecosystem/robot-command-relay && python3 -m pytest -q)
+# Tests: las SEIS suites, 105 passed + 8 xfailed en total (2026-09-10). Antes esto corría
+# solo dos de las seis, así que el número de §2 no se podía verificar con el health check.
+for d in unitree_ros2/robot_executor unitree_ros2/robot_camera_bridge \
+         robot-ecosystem/robot-command-relay robot-ecosystem/robot-video-pipeline \
+         AI-VL-ecosystem/AI-VL-backend AI-VL-ecosystem/AI-VL-core; do
+  printf '%-42s ' "$d"; (cd $d && python3 -m pytest -q 2>&1 | tail -1)
+done
+# Y los 8 xfail con su motivo, que es donde viven los defectos abiertos (§7.3):
+(cd unitree_ros2/robot_executor && python3 -m pytest -q -rxX | /usr/bin/grep '^XFAIL')
 
 # El gate de commit, exactamente como lo invoca git (NO --all-files: eso saltea los archivos
 # sin trackear y da un falso OK en tests nuevos)
