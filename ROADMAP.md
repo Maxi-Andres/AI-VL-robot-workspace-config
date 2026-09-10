@@ -25,6 +25,7 @@ citados desde el código.
 |---|---|
 | Qué hacer, en qué orden, y el estado real | **este archivo** |
 | Por qué el DDS no cruza de subred, y por qué dos robots no conviven en un segmento | `robot-splunk-docs/RED-Y-DDS.md` |
+| **Por qué el robot caminaba a tirones, y por qué la latencia del enlace se multiplicaba** | **`robot-splunk-docs/FRENO-INYECTADO.md`** — medido 10-09, arreglado, **falta re-medir sobre LTE y Starlink** |
 | Tasas y tamaños reales de los 122 tópicos del Go2 | `robot-splunk-docs/CENSO-GO2.md` |
 | Qué IP es cada una y en qué archivo se cambia | `robot-splunk-docs/IPS-Y-DONDE-CAMBIARLAS.md` |
 | Por qué se corta el video del robot (falla también en la app de Unitree) | `AI-VL-ecosystem/docs/CORTES_DE_VIDEO_Y_SOBRECALENTAMIENTO.md` |
@@ -126,12 +127,12 @@ servicios vivos; el resto viene del 09-04.)*
 | Video: mitad del robot | **construida** — encode por hardware + push RTMP | `robot-video-pipeline/robot/run-video.sh` con `nvv4l2h264enc` |
 | Video: mitad de HQ | **corriendo** — mediamtx + Frigate 0.14.1 | contenedor `frigate` healthy, mediamtx en `:8554/:8888/:8889/:1935` |
 | Video: el stream | **FUNCIONANDO** — 5.1 fps estables, cola del NVR en 0 y sin descartes (2026-09-10) | `ESTAB 192.168.20.99:1935 ← 10.1.254.18`. Requirió **dos** arreglos: `SERVER_ONLY=1` en la unidad de HQ (09-09) y **capar `MJPEG_FPS`** (10-09), sin lo cual el stream directo ahogaba al RTMP |
-| **Comandos: micro tirones al caminar** | **abierto — y ahora hay DOS causas candidatas, no una.** NO es el video: apagarlo no mejoró | (a) **Red:** RTT al robot **46 ms de media, 95 de pico** (era **0,25 ms** en LAN) contra un `MOVE_RATE_HZ=10` = 100 ms. `command_sender` solo llama a `Move()` cuando llega un paquete, así que el jitter se convierte en movimiento irregular. Ver `PUERTOS.md` §1. (b) **Código, encontrado el 2026-09-10:** el `RelayTransport` —que es justamente el camino del robot en campo— **inyecta un `stop_move` en cada refresh de teleop**, produciendo move-halt-move-halt. Es un defecto, no jitter, y está capturado por un xfail (§7.3). **Descartar (b) antes de seguir midiendo (a): es gratis y no necesita el robot en LAN** |
+| **Comandos: micro tirones al caminar** | **DIAGNOSTICADO y ARREGLADO el 2026-09-10 — falta re-medir sobre LTE y Starlink** | **No era el jitter, y no era el video: era un defecto de 2 líneas que AMPLIFICA la latencia del enlace.** El `RelayTransport` posteaba un `stop_move` antes de cada `move`, y como ese POST es bloqueante y `_start_move` lo espera con un `join`, **la ventana de frenado ≈ RTT + 9 ms**. Medido con sniffer sobre `tcp/8092`, 30 s de teleop real: **154 de 155 moves (99%) precedidos por un freno**, 320 comandos donde alcanzaban 155. En cable son 15 ms de un ciclo de 155 (10%, imperceptible); sobre LTE a 46/95 ms son 55–104 ms (35–67%) — **el robot frena más de lo que camina**. Por eso el síntoma desapareció solo al pasar a cable, sin que nadie arreglara nada. Análisis completo, aritmética y protocolo de re-medición: **`FRENO-INYECTADO.md`** |
 | Relay de comandos | **construido** — allowlist + clamp + dead-man | `robot-command-relay/relay_server.py` + tests |
 | Control por voz, una acción | **funcionando** en el Go2 | `docs/COMO_USAR_VOZ_ROBOT.md`, `robot_executor` |
 | Control por voz, secuencia | **no existe** | el intérprete devuelve **un** skill, no una lista |
 | Persistencia de la app (Redis/Mongo) | **no existe** | `grep -riE 'redis\|pymongo\|mongo\|minio'` en AI-VL → 0 hits |
-| Tests | **105 pasan, 8 xfail estrictos** (eran 30 y 4 antes del 28-08; 70 y 6 el 28-08) | corrido el 2026-09-10: executor **59+4** · camera_bridge 11+1 · relay 6+2 · video-pipeline 9+1 · backend 10 · iacore 10. El crecimiento es todo del executor: `test_deadman_contract.py`, que **destapó dos defectos nuevos en el `RelayTransport`** — ver §7.3 |
+| Tests | **107 pasan, 6 xfail estrictos** (eran 30 y 4 antes del 28-08; 70 y 6 el 28-08) | corrido el 2026-09-10 **después del arreglo del freno**: executor **61+2** · camera_bridge 11+1 · relay 6+2 · video-pipeline 9+1 · backend 10 · iacore 10. `test_deadman_contract.py` destapó los dos defectos del `RelayTransport`, se arreglaron, y sus dos xfail pasaron a tests que pasan — ver §7.1 y `FRENO-INYECTADO.md` |
 | Commit gate | verde en los 7 repos con código | `pre-commit run` rc=0 en los 7 |
 | Robot | **EN LÍNEA y redesplegado 2026-09-09** — en campo, por el túnel del IR1101 | `10.1.254.18` responde; los tres servicios `active`. `.123.18` no responde porque no estamos en su LAN |
 | **GPS del robot** | **hardware disponible, sin configurar** — antena activa + módulo celular en el IR1101 | el chasis base del IR1101 **no** tiene GNSS: lo da el módulo. Plan en `PLAN-CONECTIVIDAD-ROBOTS.md` **Fase 6** |
@@ -453,18 +454,20 @@ su §8 y el pendiente también figura en `RED-Y-DDS.md` §9.
 
 ### 7.1. P0 de seguridad — reverificados línea por línea el 2026-09-10
 
-**Los cuatro siguen abiertos**, más **dos nuevos** que salieron de los xfails de §7.3. Las
-referencias de línea de `robot_executor_service.py` corrieron una posición desde el 28-08 y
-están corregidas acá; las cuatro de `# noqa: S104` se verificaron exactas.
+**Los cuatro de seguridad siguen abiertos.** Los **dos del `RelayTransport`** que salieron de
+los xfails de §7.3 quedaron **arreglados el 2026-09-10**. Las referencias de línea de
+`robot_executor_service.py` corrieron una posición desde el 28-08 y están corregidas acá; las
+cuatro de `# noqa: S104` se verificaron exactas.
 
-- [ ] **`RelayTransport` inyecta un halt en cada refresh.** `robot_executor_service.py:935`
-      postea `stop_move` incondicionalmente al salir del loop. Copiar la guarda
-      `if reached_deadline` que Go2 (`:439`) y G1 (`:751`) ya tienen. **Es también causa
-      candidata de los micro tirones (§2).** No necesita robot.
-- [ ] **`RelayTransport` no clampea la duración.** `robot_executor_service.py:942`: falta el
-      `max(0.1, min(step, MAX_STEP_S))` de `:449` y `:761`, así que `duration_s=60` es una
-      caminata de 60 s que el dead-man del robot **no** corta. Violación directa de
-      *"[blocker] Bounded motion, always"*, en el camino del robot en campo. No necesita robot.
+- [x] **`RelayTransport` inyectaba un halt en cada refresh** — hecho 2026-09-10. Posteaba
+      `stop_move` incondicionalmente al salir del loop; ahora va detrás de
+      `if reached_deadline` dentro de un `try/finally`, igual que Go2 (`:439`) y G1 (`:751`).
+      **Confirmado contra el robot real antes de tocarlo**: 154 de 155 moves llevaban freno.
+      Era la causa de los micro tirones (§2). Ver `FRENO-INYECTADO.md`.
+- [x] **`RelayTransport` no clampeaba la duración** — hecho 2026-09-10. Se agregó el
+      `max(0.1, min(step, MAX_STEP_S))` que ya estaba en `:449` y `:761`. `duration_s=60`
+      dejó de ser una caminata de 60 s que el dead-man del robot no cortaba.
+      Los dos xfails pasaron a `XPASS(strict)`, pytest falló, y los marcadores se borraron.
 - [ ] **`SAFE_MODE` fail-safe.** `robot_executor_service.py:90` es
       `_as_bool(os.environ.get("SAFE_MODE"), False)` → **default permisivo**. Y `:1256`
       (`effective_safe = req_safe if isinstance(req_safe, bool) else SAFE_MODE`) deja que un
@@ -512,30 +515,31 @@ están corregidas acá; las cuatro de `# noqa: S104` se verificaron exactas.
 Los repos **sin suite** bajaron de cuatro a dos: quedan `AI-VL-core` (tiene el contract test,
 pero nada de su inferencia) y `robot-telemetry-agent` (nada).
 
-### 7.3. Los 8 xfails estrictos
+### 7.3. Los 6 xfails estrictos
 
 Afirman el comportamiento **correcto** de defectos abiertos. `strict=True`: cuando arreglás el
 defecto el test pasa inesperadamente y **pytest falla**, avisándote de borrar el marcador.
 Arreglá el código, borrá el marcador — no borres el test.
 
-Enumerados el 2026-09-10 corriendo `pytest -rxX` en los cuatro repos con suite. **Son 8, no 4:
-la lista anterior omitía los dos del `RelayTransport`**, que son los más graves de la tabla
-porque el relay es el único camino que puede mover al robot **en campo**.
+Enumerados el 2026-09-10 corriendo `pytest -rxX` en los cuatro repos con suite. Eran **8** esa
+mañana: la lista de antes omitía los dos del `RelayTransport`, que resultaron ser los más
+graves de todos. **Esos dos se arreglaron el mismo día (§7.1) y sus marcadores ya no existen**,
+así que quedan 6.
 
 | Test | Repo | Defecto |
 |---|---|---|
-| `test_a_new_move_supersedes_the_previous_one_without_injecting_a_halt[relay]` | executor | **`RelayTransport._run_move_loop:935` postea `{'verb':'stop_move'}` incondicionalmente al salir del loop**, no solo cuando venció el deadline. Cada refresh de teleop inyecta un frenazo. Go2 (`:439`) y G1 (`:751`) lo guardan con `if reached_deadline`; el relay se copió sin esa guarda — §5 del estándar, tercera copia |
-| `test_an_absurd_duration_is_clamped_to_max_step[relay]` | executor | **`RelayTransport._start_move:942` no clampea la duración**: `deadline = now + (duration or DEFAULT_STEP_S)`, sin el `max(0.1, min(step, MAX_STEP_S))` que sí está en `:449` (Go2) y `:761` (G1). `duration_s=60` por el relay es una caminata de 60 s, y **el dead-man del robot no la salva** porque el loop lo sigue alimentando cada `_REFRESH_S` |
 | `test_move_without_continuous_is_bounded` (×2 robots) | executor | `continuous` default `True` — P0 de §7.1 |
 | `test_an_soi_with_no_eoi_does_not_grow_the_buffer_without_bound` (×2 copias) | camera_bridge, video-pipeline | el scanner MJPEG retiene los 5 MB de un frame sin EOI |
 | `test_rate_limiter_does_not_allow_double_the_budget_across_a_boundary` | relay | ventanas fijas dejan pasar 2× en el borde |
 | `test_token_comparison_is_constant_time` | relay | el relay compara el token con `==` |
 
-> 🔴 **Los dos primeros son P0 y no estaban en ninguna lista de P0.** Los dos violan
-> *"[blocker] Bounded motion, always"* del estándar §3, en el transporte del robot itinerante.
-> El primero es además causa candidata de los micro tirones (§2). Ninguno necesita el robot
-> para arreglarse: el fix es copiar la guarda y el clamp que los otros dos transportes ya
-> tienen, y los tests ya están escritos y en rojo.
+> ✅ **`strict=True` se ganó el sueldo, y conviene entender cómo.** Los dos xfails del
+> `RelayTransport` estaban escritos hacía días y **nadie los había leído**: no figuraban en
+> ninguna lista de P0, así que el defecto más caro del sistema estaba documentado en rojo y
+> sin priorizar. Al aplicar el arreglo pasaron a `XPASS(strict)` y pytest falló, que es
+> justamente el aviso de borrar el marcador. **La lección: un xfail que no está registrado en
+> este documento es un defecto que nadie va a priorizar.** Los dos tests quedaron
+> parametrizados sobre los tres transportes, así que la divergencia no puede volver.
 
 ### 7.3.b. Cobertura de tests — el mapa de lo que no está protegido
 
@@ -792,7 +796,32 @@ antena, y el bypass de CGNAT que el IR1101 hace sobre Starlink).
    ser necesarios.
 
 - [ ] `iperf3` sobre LTE y sobre Starlink, misma hora, mismo punto, y anotar los dos números acá.
+      ✅ **`iperf3` instalado en las dos puntas el 2026-09-10** (3.20 en la PC, 3.7 en el
+      Jetson — no pueden coincidir, y se verificó que interoperan). **Línea de base en
+      cable: 42.5 Mbps de subida / 89.0 de bajada.** Detalle en `FRENO-INYECTADO.md` §7.1.
 - [ ] Reproducir el congelamiento del video sobre LTE.
+
+### 2026-09-10 — el enlace por cable, y la re-medición que queda pendiente
+
+Con el robot en cable y el túnel arriba, el RTT bajó a **4.93 ms de media** (era 46 sobre
+LTE, 0,25 en L2 directo) y **los micro tirones desaparecieron**. Eso hizo visible que el
+síntoma tenía una causa de código, no de red: ver §2 y `FRENO-INYECTADO.md`.
+
+> 🔴 **El arreglo está verificado en cable, que es justamente el enlace donde el defecto
+> casi no se notaba.** La prueba que vale es sobre el enlace donde dolía. **Hay que re-medir
+> las tres, con el mismo protocolo**, y el protocolo paso a paso está en
+> `FRENO-INYECTADO.md` §7 con la tabla para llenar.
+
+- [x] **Cable post-fix — hecho el 2026-09-10.** 90 s de teleop real: **inyecciones 0**
+      (eran 99% de los moves), tráfico hacia el robot **a la mitad** (10.7 → 5.7 cmd/s), y
+      los 19 `stop_move` que quedan verificados uno por uno como dead-man legítimo al
+      soltar el stick. La cadencia de teleop no cambió: el arreglo no aceleró nada, sacó el
+      freno. `FRENO-INYECTADO.md` §6.1.
+- [ ] **Re-medir sobre LTE** — es la medición que decide si quedaba algo de jitter puro.
+      Si con `stop_move`=0 el tirón persiste, entonces sí es la red y se vuelve a
+      `PUERTOS.md` §1, pero ya sin la variable de código encima.
+- [ ] **Re-medir sobre Starlink** — misma hora y mismo punto que LTE, o la comparación no
+      vale (es el mismo error de aislamiento de variables que ya se cometió en agosto).
 
 ---
 
