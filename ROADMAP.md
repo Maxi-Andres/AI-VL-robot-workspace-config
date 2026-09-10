@@ -31,6 +31,11 @@ citados desde el código.
 | Licencia vencida (31/08) y alta de ThousandEyes | `robot-splunk-docs/LICENCIA-Y-THOUSANDEYES.md` |
 | Qué puerto usa cada máquina y qué cruza el enlace de campo | `robot-splunk-docs/PUERTOS.md` |
 
+**Convención de ramas (2026-09-10):** `dev` es desarrollo; **el robot y cualquier despliegue
+usan la rama principal**. Se mergea `dev` → principal con `--ff-only` y el robot hace
+`git pull` como siempre. ⚠️ `robot-command-relay` usa `master` y el resto `main` — pendiente
+unificar desde GitHub, porque rompe cualquier `for` sobre los repos.
+
 **Regla de mantenimiento:** si este documento y otro se contradicen, gana este — y el otro
 está roto y hay que arreglarlo. Si algo se termina, se tacha acá, no en cinco lugares.
 
@@ -144,6 +149,7 @@ contradecían entre sí.
 | `PLAN.md` §2.3 | el contenedor de TE del Jetson es **"(Cisco)"**, implícitamente ajeno | Está en la org **propia** `SILK TECH SRL - 178`, con admin nuestro |
 | `PLAN.md` §388 | *"Contenedor ThousandEyes (IOx) en el IR1101: RUNNING"* | El agente `LAB-IR-1101` figura **offline desde ~2026-08-22**, igual que el del Jetson |
 | Este documento, 2026-08-31 | *"la app de Splunkbase hace pull, no expone nada"* | **Falso**: la app no hace pull. Los **dos** caminos oficiales son push a HEC |
+| `REDEPLOY-EN-EL-ROBOT.md`, 2026-08-27 | `git clone` sin rama | Durante un tiempo la rama por defecto estaba **3-8 commits atrás** de `dev` y el clone dejaba código viejo sin fallar. **Resuelto el 10-09**: `dev` mergeado a la principal, el robot vive en `main` |
 
 
 **Además:** 14 menciones de `192.168.123.99` siguen repartidas por los docs. Esa IP ya no
