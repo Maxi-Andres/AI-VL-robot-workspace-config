@@ -1,6 +1,7 @@
 # ROADMAP — la fuente de la verdad
 
-**Escrito el 2026-08-28. Revisado contra el código el 2026-09-10.** Reemplaza y absorbe:
+**Escrito el 2026-08-28. Revisado contra el código el 2026-09-10; §2, §4, §5.2, §10 y §11
+actualizados el 2026-09-14, 15 y 16 (video: latencia MEDIDA, y el reescalado MJPEG bajado de 105 a 29 ms).** Reemplaza y absorbe:
 `.claude/STATE.md`, `AI-VL-ecosystem/docs/CONTROL_POR_VOZ_G1.md`,
 `AI-VL-ecosystem/docs/ARQUITECTURA_ROBOT_G1_PROPUESTA.md` y
 `robot-splunk-docs/Telemetria-Splunk.md`.
@@ -126,13 +127,17 @@ servicios vivos; el resto viene del 09-04.)*
 | HEC de Splunk | **abierto y sano** | `192.168.20.200:8088` responde `{"text":"HEC is healthy","code":17}` |
 | Video: mitad del robot | **construida** — encode por hardware + push RTMP | `robot-video-pipeline/robot/run-video.sh` con `nvv4l2h264enc` |
 | Video: mitad de HQ | **corriendo** — mediamtx + Frigate 0.14.1 | contenedor `frigate` healthy, mediamtx en `:8554/:8888/:8889/:1935` |
-| Video: el stream | **FUNCIONANDO** — 5.1 fps estables, cola del NVR en 0 y sin descartes (2026-09-10) | `ESTAB 192.168.20.99:1935 ← 10.1.254.18`. Requirió **dos** arreglos: `SERVER_ONLY=1` en la unidad de HQ (09-09) y **capar `MJPEG_FPS`** (10-09), sin lo cual el stream directo ahogaba al RTMP |
+| Video: el stream | **FUNCIONANDO — y desde el 2026-09-14 por el H.264 NATIVO del Go2**: 1280x720 a **14.25 fps**, 1.78 Mbps | `SOURCE=multicast` lee RTP en `230.1.1.1:1720` y lo pasa **sin decodificar ni re-encodear**. 3.2× los cuadros por 1.24× el ancho de banda, 2.5× más eficiente por cuadro, y el Jetson sin trabajo de encoder. Antes: 1080p a 4.5 fps por el videohub. Detalle en `PLAN-VIDEO.md` §3 |
+| **Video: la latencia** | **MEDIDA 2026-09-15 — ~100-235 ms, y nunca hubo un problema de latencia** | MJPEG directo del robot **235-300 ms** (instrumentado, dos corridas). La rama H.264 **no se puede instrumentar desde un script**: el unico cliente disponible es OpenCV, que arrastra el defecto de la fila de abajo — el navegador es el unico instrumento, y da **~100 ms con multicast** y ~200 con videohub. El "~650 ms del videohub" era un error de reloj (el mismo método dio -710 y -1400 ms, imposibles) y además **no cabe en el total**. Método: `latency_clock.py` — una página que servimos nosotros, con reloj y un panel que parpadea, filmada por la cámara; los dos extremos son nuestro reloj. `PLAN-VIDEO.md` §1 y §9 |
+| **Video: el reescalado del MJPEG** | **ARREGLADO 2026-09-16 — de 105 ms a 12.8 ms (8.2×), máximo de 194 a 17.8, y la CPU del proceso de 22.4% a 3.0%** | No era el reescalado: el trabajo real son 28 ms y los otros 77 eran **CPU congelada**. `robot-video.service` tenía `CPUQuota=50%` sobre el cgroup entero (los tres procesos del pipe comparten presupuesto) y el kernel lo probaba: `nr_throttled` 14059 de 30418 períodos, **46% congelados**. Arreglado cambiando `CPUQuota` (techo absoluto) por `CPUWeight=50` (peso relativo, solo muerde bajo contención). Dos arreglos: la cuota (105→29.4) y el reescalado en los motores NVJPG del Orin NX (29.4→12.8). `PLAN-VIDEO.md` §6.c |
+| **Video: leerlo con OpenCV** | ⚠️ **DEFECTO ABIERTO** — `cv2.VideoCapture("rtsp://mediamtx")` entrega cuadros de **2455 ms** de antigüedad | Constante desde el primer cuadro, no se acumula. El MISMO stream sale por WebRTC en 200 ms y por el ffmpeg de Frigate en 1475 ms: **escala con el cliente, no con el stream**. Descartados con medición: opciones de FFmpeg (todas), TCP vs UDP, hilos, `writeQueueSize` de mediamtx (y bajarlo rompió a Frigate). Sin causa raíz. `PLAN-VIDEO.md` §6.b |
+| Video: el lector del bridge | **cerrado el 2026-09-14 — no era lo que parecía** | El "lector 12.91 fps de una fuente de 14" era el transitorio de arranque (2.35 s de abrir RTSP + 2.39 s esperando el primer IDR) dentro de un promedio acumulado. En régimen consume **14.23 fps, la tasa exacta de la fuente**. Lo roto era un `STREAM_URL` apuntando al MJPEG que `SOURCE=multicast` apaga. `PLAN-VIDEO.md` §6 |
 | **Comandos: micro tirones al caminar** | **DIAGNOSTICADO y ARREGLADO el 2026-09-10 — falta re-medir sobre LTE y Starlink** | **No era el jitter, y no era el video: era un defecto de 2 líneas que AMPLIFICA la latencia del enlace.** El `RelayTransport` posteaba un `stop_move` antes de cada `move`, y como ese POST es bloqueante y `_start_move` lo espera con un `join`, **la ventana de frenado ≈ RTT + 9 ms**. Medido con sniffer sobre `tcp/8092`, 30 s de teleop real: **154 de 155 moves (99%) precedidos por un freno**, 320 comandos donde alcanzaban 155. En cable son 15 ms de un ciclo de 155 (10%, imperceptible); sobre LTE a 46/95 ms son 55–104 ms (35–67%) — **el robot frena más de lo que camina**. Por eso el síntoma desapareció solo al pasar a cable, sin que nadie arreglara nada. Análisis completo, aritmética y protocolo de re-medición: **`FRENO-INYECTADO.md`** |
 | Relay de comandos | **construido** — allowlist + clamp + dead-man | `robot-command-relay/relay_server.py` + tests |
 | Control por voz, una acción | **funcionando** en el Go2 | `docs/COMO_USAR_VOZ_ROBOT.md`, `robot_executor` |
 | Control por voz, secuencia | **no existe** | el intérprete devuelve **un** skill, no una lista |
 | Persistencia de la app (Redis/Mongo) | **no existe** | `grep -riE 'redis\|pymongo\|mongo\|minio'` en AI-VL → 0 hits |
-| Tests | **107 pasan, 6 xfail estrictos** (eran 30 y 4 antes del 28-08; 70 y 6 el 28-08) | corrido el 2026-09-10 **después del arreglo del freno**: executor **61+2** · camera_bridge 11+1 · relay 6+2 · video-pipeline 9+1 · backend 10 · iacore 10. `test_deadman_contract.py` destapó los dos defectos del `RelayTransport`, se arreglaron, y sus dos xfail pasaron a tests que pasan — ver §7.1 y `FRENO-INYECTADO.md` |
+| Tests | **175 pasan, 6 xfail estrictos** (2026-09-14: executor 61+2 · camera_bridge 24+1 · relay 39+2 · video-pipeline 31+1 · backend 10 · iacore 10). Antes: 107 y 6 | corrido el 2026-09-14 con el bloque de §8. El salto de 107 a 175 es sobre todo relay (6→39) y video-pipeline (9→31); camera_bridge subió 11→24, cinco de ellos del guardián de atraso del lector RTSP. El xfail que desapareció es el del `RelayTransport`, arreglado el 09-10 — ver §7.1 y `FRENO-INYECTADO.md` |
 | Commit gate | verde en los 7 repos con código | `pre-commit run` rc=0 en los 7 |
 | Robot | **EN LÍNEA y redesplegado 2026-09-09** — en campo, por el túnel del IR1101 | `10.1.254.18` responde; los tres servicios `active`. `.123.18` no responde porque no estamos en su LAN |
 | **GPS del robot** | **hardware disponible, sin configurar** — antena activa + módulo celular en el IR1101 | el chasis base del IR1101 **no** tiene GNSS: lo da el módulo. Plan en `PLAN-CONECTIVIDAD-ROBOTS.md` **Fase 6** |
@@ -206,7 +211,14 @@ renombre los tocó a todos. No sirven para saber qué está fresco.
    vez de la del túnel; y no avisaba que **los `.env` rescatados traen rutas del repo viejo
    adentro**, que fue lo que tiró abajo el relay.
 
-3. **ThousandEyes por el camino oficial** necesita DNS público, certificado de CA pública,
+3. ~~**El glass-to-glass del video.**~~ ✅ **MEDIDO el 2026-09-15: ~100-235 ms según el camino.** Ya no
+   bloquea nada, y la conclusión es que **el video nunca fue el problema**. Lo que sí queda
+   abierto es un defecto del lado del cliente: leer mediamtx con OpenCV cuesta 2.4 s fijos
+   (§2 y `PLAN-VIDEO.md` §6.b). No bloquea la teleoperación —`/drive` en MJPEG va a 235 ms y
+   en H.264 a ~200— pero **sí bloquea mover YOLO y el VLM a H.264**, porque ambos comen del
+   bridge y el bridge es el que paga esos 2.4 s.
+
+4. **ThousandEyes por el camino oficial** necesita DNS público, certificado de CA pública,
    reverse proxy en 443 y NAT — o sea, gente de infraestructura. Mientras tanto corre el
    puente `te-poller` (§5.6). Plan de migración: `LICENCIA-Y-THOUSANDEYES.md` §5.
 
@@ -233,9 +245,67 @@ Falta solamente cerrar el lazo, y ahora se puede porque el HEC está abierto:
 
 Presupuesto medido: **40 MB/día** contra un techo de 500 MB/día compartido. 8%.
 
-### 5.2. Video — el stream está caído, y hay un síntoma abierto
+### 5.2. Video — anda, por el H.264 nativo. Lo que falta es MEDIR la latencia
 
-> ✅ **RESUELTO el 2026-09-09. El video llega: 5.1 fps estables.**
+> ✅ **2026-09-14: corre `SOURCE=multicast`** — el H.264 nativo del Go2 por RTP multicast en
+> `230.1.1.1:1720`, passthrough puro. 1280x720 a **14.25 fps**, 1.78 Mbps. Contra el camino
+> viejo (videohub + re-encode, 1080p a 4.5 fps): **3.2× los cuadros por 1.24× el ancho de
+> banda** y el Jetson sin trabajo de encoder.
+>
+> ❌ **No bajó la latencia.** Medido por dos métodos independientes: los dos caminos miden
+> igual. La latencia está aguas arriba de ambos y **sigue sin cuantificarse**.
+>
+> ✅ **2026-09-15: la latencia quedó medida y el video NO era el problema.** MJPEG directo
+> **235-300 ms** (instrumentado); H.264 por WebRTC **~100 ms con multicast** y **~200 ms con el
+> videohub** (a ojo: no hay cliente H.264 de baja latencia fuera del navegador). Lo que costaba
+> segundos era un cliente nuestro, no el robot.
+>
+> 🔴 **La decisión que hay que tomar es `SOURCE`, y no hay opción que gane en todo:**
+>
+> | | `SOURCE=jpeg` (videohub) | `SOURCE=multicast` |
+> |---|---|---|
+> | H.264 | 1080p, **8.5 fps**, 0.80 Mbps (el encoder del Jetson se ahoga) | 720p, **14.0 fps**, 2.12 Mbps, passthrough |
+> | latencia H.264 | ~200 ms | **~100 ms** |
+> | `/drive` en MJPEG | **anda, 235 ms** | **muerto** |
+> | YOLO y el VLM | **andan** | **muertos** |
+> | Frigate / NVR | anda | anda |
+> | perilla de bitrate | `BITRATE`/`NVR_FPS`/`IDR_FRAMES` | **ninguna** |
+> | carga del Jetson | decode JPEG + encode H.264 | **nada** |
+>
+> Cuadro completo y los matices en `PLAN-VIDEO.md` §3.3. **Multicast gana en casi todo** —el
+> doble de cuadros, la mitad de latencia, el Jetson libre y el double free del encoder vuelto
+> imposible— y pierde en dos: mata al MJPEG (y con él YOLO y el VLM), y **no tiene perilla de
+> bitrate**, así que sus 2.12 Mbps no se pueden negociar sobre LTE.
+>
+> Multicast apaga el `mjpeg_server` (no hay JPEG que servir), y el bridge —que alimenta el modo
+> MJPEG, YOLO y el VLM— se queda sin fuente. `/drive` en H.264 sobrevive porque va por WebRTC
+> directo, sin pasar por el bridge.
+>
+> ⚠️ **NO apuntes el bridge a `rtsp://mediamtx` para taparlo.** Es lo que se hizo el 09-14
+> (commit `791d9d8`) y metió **2.4 s** en la vista de manejo. Si hace falta que el bridge coma
+> H.264, el camino es WHEP, que es el que el navegador ya usa a 200 ms.
+>
+> ⚠️ **Antes de salir a campo con esto.** El multicast **no cruza la red** —se lee en el bus
+> interno del robot y lo que sale sigue siendo RTMP unicast sobre TCP, así que NAT/LTE/Starlink
+> son indiferentes—, **pero se perdió la perilla de bitrate**: en `multicast` el encoder es el
+> de Unitree y `BITRATE`/`NVR_FPS`/`MAXFPS`/`IDR_FRAMES` quedan inertes. Y manda más (1.78 vs
+> 1.43 Mbps, 14.25 vs 4.5 fps). Como el congelamiento acá es pérdida con retransmisión TCP, y
+> mandar menos pierde menos, **sobre un enlace malo el movimiento es volver a `SOURCE=jpeg`**,
+> que sigue entero. Nada se midió todavía sobre LTE ni Starlink.
+
+**Historia, para no repetirla** — dos hipótesis centrales de este documento resultaron falsas:
+
+| Decía | Es |
+|---|---|
+| "el videohub mete ~650 ms y es el 90%" | Artefacto de reloj. El mismo método dio -710 y -1400 ms, imposibles. Saltear el videohub no cambió la latencia |
+| "`rt/frontvideostream` leído LOCALMENTE en el robot es la mejora de mayor techo" | **Callejón sin salida, probado adentro del Jetson** (§11). El camino bueno era el multicast |
+
+
+
+**Cómo se llegó hasta acá (histórico, ya superado por el multicast):**
+
+> ✅ **RESUELTO el 2026-09-09.** El video empezó a llegar: 5.1 fps por el camino del videohub.
+> *(Esa cadencia es la de entonces; hoy son 14.25 fps por multicast — ver arriba.)*
 >
 > - [x] ~~`SERVER_ONLY=1` en la unidad de usuario~~ — aplicado como drop-in en
 >       `~/.config/systemd/user/robot-video-pipeline.service.d/override.conf`.
@@ -253,8 +323,11 @@ Presupuesto medido: **40 MB/día** contra un techo de 500 MB/día compartido. 8%
 no recibe frames, sale, ffmpeg da EOF, el supervisor reintenta. Frigate conecta y encuentra el
 path vacío.
 
-**Después, el síntoma abierto** (de `ESTADO-Y-CONTINUACION.md` §4.4, que sigue vigente): el
-video se congela ~1 s cada ~4 s. Hipótesis principal: las ráfagas de keyframe del H.264
+**Después, el síntoma abierto** (de `ESTADO-Y-CONTINUACION.md` §4.4). ⚠️ **Diagnosticado
+desde entonces**: el congelamiento es **pérdida con retransmisión TCP**, no keyframes — el
+videohub daba 0 frenadas de origen. El que lo delata es `dsack_dups`, no `rcv_ooopack`. Los
+cuatro experimentos de abajo se escribieron antes de saber eso; releerlos con esa luz. El
+texto original decía: el video se congela ~1 s cada ~4 s. Hipótesis principal: las ráfagas de keyframe del H.264
 saturan el enlace y dejan sin ancho de banda al MJPEG, que lo comparte. `IDR_FRAMES=15` con
 `NVR_FPS=5` es un keyframe cada 3 s.
 
@@ -282,16 +355,26 @@ Lo que ya **no** es (descartado con medición): no es la cámara (12-14 fps), no
 
 Más adelante:
 
-- [ ] **`rt/frontvideostream` leído LOCALMENTE en el robot.** El Go2 publica H.264 nativo a
-      30 fps por su propio encoder. Está documentado como fallido, pero **el fracaso fue
-      siempre leyéndolo desde afuera** — nunca adentro, que es un escenario distinto (bus
-      interno, sin fragmentación por red). Si anda: 30 fps ya comprimido, sin polling del
-      `videohub` y sin recodificar. **Es la mejora de mayor techo.**
-      Existe `src/go2_h264_stream.cpp`, que quedó de aquel intento.
+- [x] ~~**`rt/frontvideostream` leído LOCALMENTE en el robot.**~~ **REFUTADO el 2026-09-14.**
+      Se probó adentro del Jetson y falla igual que desde afuera: el tópico existe, nuestro
+      lector **empareja** (los suscriptores suben de 1 a 2), y aun así **recibe 0 bytes y el
+      callback nunca corre**. No es red ni buffers — es la deserialización del mensaje. Los
+      "30 fps" que este documento citaba nunca se verificaron; lo medido por multicast es
+      **14.25**. Ver §11 y `PLAN-VIDEO.md` §3.1.
+- [ ] **Sin dueño `src/go2_h264_stream.cpp`**, que quedó de aquel intento. Hoy `build.sh` lo
+      compila siempre, así que un error ahí rompe el build de producción. Borrarlo o dejarlo
+      documentado como intento fallido.
 - [ ] El `videorate` que falta en el pipeline GStreamer del robot. El de la PC necesitó
       `-vsync cfr -r 15`; el equivalente en GStreamer nunca se aplicó. Verificar si el síntoma
       sigue antes de trabajar en esto.
-- [ ] Reescalado por hardware. Hoy cv2 cuesta ~400 ms/frame.
+- [x] ~~Reescalado por hardware. Hoy cv2 cuesta ~400 ms/frame.~~ **Medido de verdad el
+      2026-09-16: cv2 cuesta 28 ms, no 400.** Los 400 (y los 105 que medimos al principio) eran
+      en su mayoría **CPU congelada por `CPUQuota=50%`**, no cómputo. Sacando la cuota quedó en
+      **29.4 ms**. El camino por hardware sigue disponible y **validado fuera del servicio**
+      (`nvjpegdec ! nvvidconv ! nvjpegenc` da **10.5 ms/cuadro**), pero ahora la ganancia es de
+      17 ms sobre un total de ~250 — lo que compra de verdad es **liberar ~36% de un núcleo**.
+      Dos trampas si se retoma: los caps tienen que ser `(memory:NVMM)` o el pipeline produce
+      **0 bytes en silencio**, y `nvvidconv` no preserva aspect ratio. `PLAN-VIDEO.md` §6.c
 - [ ] Decidir **video on-demand vs continuo**. Telemetría son 40 MB/día; video 1080p son
       2-4 Mbps ≈ **20-40 GB/día**. Por un enlace de campo entra, pero es otro orden de
       magnitud. Decisión a tomar antes de construir nada más.
@@ -775,6 +858,70 @@ ROS2 choca con la fase 7. Abstraer y dejar los dos, no.
 
 ## 10. Observaciones de campo
 
+### 2026-09-16 — 77 de los 105 ms del reescalado eran una cuota de systemd
+
+Reducir el MJPEG de 1080p a 640 baja el tráfico 9× (13.79 → 1.56 Mbps) pero costaba 105 ms.
+El trabajo real eran **28 ms**. Los otros 77 eran el cgroup congelado por `CPUQuota=50%`:
+`nr_throttled` marcaba **14059 de 30418 períodos**. Cambiando a `CPUWeight=50` quedó en
+**29.4 ms**, con el máximo de 194 a 34.5.
+
+**El patrón, que es el que vale la pena recordar:** la cuota se puso con un comentario que
+decía *"esto es barato porque va por hardware"*. Era cierto — hasta que alguien agregó un
+reescalado por CPU al mismo pipeline. **Un límite dimensionado sobre una premisa sigue vigente
+después de que la premisa muere, y no avisa.** El síntoma no se parece en nada a la causa: se
+veía como "el reescalado es lento", y medir el reescalado aislado daba bien.
+
+Y la distinción que lo resolvió: **`CPUQuota` es un techo absoluto, `CPUWeight` es un peso
+relativo.** La intención escrita ("nada acá puede competir con el control del robot") se sirve
+con el segundo; el primero congela aunque la máquina esté ociosa, que era el caso — el Jetson
+estaba al 15-20% de 4 núcleos.
+
+### 2026-09-15 — el video nunca fue el problema; era un cliente
+
+Después de semanas de tratar la latencia como un defecto del robot, quedó medida: **~100 ms
+por WebRTC con multicast, ~200 ms con el videohub, y 235 ms por MJPEG**, de la cámara a la
+pantalla. No había ningún tramo oscuro aguas arriba.
+
+Lo que sí costaba segundos era **leer mediamtx con OpenCV**: 2455 ms fijos, desde el primer
+cuadro. Tres clientes del MISMO stream, a la vez: WebRTC 200 ms, el ffmpeg de Frigate 1475 ms,
+OpenCV 2455 ms. **Escala con el cliente, no con el stream.**
+
+> **La lección, que es la misma de siempre en este proyecto:** antes de atribuirle una latencia
+> a un componente remoto, medí el mismo dato por dos caminos distintos. Acá alcanzó con mirar
+> que el navegador viera lo mismo sin atraso — un dato que estuvo disponible todo el tiempo.
+
+**Y una autocrítica que conviene dejar escrita:** el atraso de `/drive` lo introduje al apuntar
+el bridge a RTSP para taparle la falta de fuente que dejaba `SOURCE=multicast`. Cambié "no se
+ve nada" por "se ve con 2.4 s", que es peor, porque lo primero se nota y lo segundo no.
+
+### 2026-09-14 — tres números que se daban por ciertos y no lo eran
+
+Todo lo de abajo estaba **escrito como hecho** en algún doc, y ninguno resistió una medición.
+El patrón se repite y conviene tenerlo presente: **los tres errores vienen de comparar contra
+un reloj que no es nuestro, o de promediar un transitorio.**
+
+1. **"El videohub mete ~650 ms"** — salió de mirar un cronómetro en pantalla contra el reloj
+   del robot. Repetido, el método dio **-710 ms** y **-1400 ms**: negativos, o sea imposibles.
+   Además, saltear el videohub entero (H.264 nativo) **no cambió la latencia**, medido por dos
+   métodos independientes. El videohub no era el problema y el 650 no era un dato.
+2. **"El lector RTSP lee 12.91 fps de una fuente de 14 y acumula latencia sin límite"** — era
+   un promedio acumulado que se comía 4.7 s de arranque (2.35 s de abrir el RTSP + 2.39 s
+   esperando el primer IDR). En régimen lee **14.23 fps, la tasa exacta de la fuente**, con
+   deriva +0.0 ms/s sobre 180 s y recuperación de una demora de 12 s en menos de 2. Lo que
+   estaba roto era un `STREAM_URL` apuntando a un MJPEG apagado.
+3. **"Control-to-photon mide la latencia del video"** — mide lo que el operador siente
+   (~1076 ms), pero **no** la del video: el robot tarda entre 311 y 1855 ms en arrancar. El
+   video llega cada 70.5 ms ±4, sin ráfagas ni huecos, así que la dispersión es del robot.
+
+> **La regla que sale de los tres:** una medición que dependa de un reloj ajeno, o que
+> promedie desde antes de que el sistema esté en régimen, miente sin avisar. Las que
+> sobrevivieron comparan **dos elapsed del mismo reloj** (la deriva del lector) o **dos
+> extremos que son ambos nuestros** (control-to-photon).
+
+**Y la trampa que queda abierta:** regularidad no es latencia. El `lag_s` que expone ahora el
+bridge, y la regularidad de ±4 ms del transporte, prueban que **no se acumula** — no dicen
+cuánto hay. Un buffer fijo de dos segundos da deriva cero. **El absoluto sigue sin medirse.**
+
 ### 2026-08-28 — Starlink parecía tener un cuello de botella; con LTE anduvo perfecto
 
 En las pruebas de enlace, Starlink mostraba lo que parecía un cuello de botella. Al cambiar a
@@ -847,3 +994,13 @@ medido en el doc de datos correspondiente.
 | Sacarle el "think" al VLM por config | `qwen3-vl:4b` piensa siempre. Hace falta un modelo no-think |
 | LuckyEngine como fábrica de skills | Su `LimbIK` vive dentro de un DLL cerrado y no se puede reusar |
 | `timechart avg(data.velocity)` sobre `/joint_states` | Es un array de N joints, no un escalar. Hay que aplanar por joint |
+| **`rt/frontvideostream` por DDS, incluso LEÍDO ADENTRO DEL JETSON** | El tópico existe y nuestro lector **empareja** (suscriptores 1→2), pero **recibe 0 bytes y el callback nunca corre**. No es red ni buffers: subir el socket a 64 MB y tocar `FragmentSize` no cambió nada, y suscribirse no agrega tráfico. Es la deserialización del mensaje; la comunidad reporta lo mismo (`invalid data size`, `std_bad_alloc`). **El camino bueno es RTP multicast en `230.1.1.1:1720`.** `PLAN-VIDEO.md` §3.1 |
+| **El cronómetro en cuadro, en ESTE robot** | La pantalla satura la cámara y los dígitos de ms salen un borrón. Y comparar contra el reloj de la notebook dio **-710 ms** y **-1400 ms** — negativos e inconsistentes |
+| **Control-to-photon como medida de la latencia de VIDEO** | La idea es sana (los dos extremos son nuestro reloj) pero el marcador no: el robot tarda entre **311 y 1855 ms** en arrancar visiblemente, y un pulso arrancó *después* de que el dead-man ya lo había frenado. El desvío (516 ms) es del orden del número buscado, y **no se promedia**: una demora mecánica es un sesgo con varianza. El video queda exonerado (llega cada 70.5 ms ±4, sin ráfagas ni huecos). Sirve para "lo que el operador siente" (~1076 ms), **no** para latencia de video. `PLAN-VIDEO.md` §9 |
+| **`grab()` de OpenCV como forma de "no decodificar"** | En el backend FFmpeg **`grab()` igual decodifica**; `retrieve()` es solo la conversión YUV→BGR. Ahorra conversión y encode de los cuadros descartados (encode 12.91→4.28 fps), pero **no acelera el consumo**: 13.7 fps con y sin |
+| **`cv2.IMREAD_REDUCED_COLOR_2/4/8` para decodificar JPEG más rápido** | OpenCV 4.2.0 en el Jetson del Go2 **ignora el flag**: los tres devuelven 1920x1080 y tardan lo mismo (20.8 ms). No hay atajo por software para el decode; el único camino real es el hardware (`nvjpegdec`) |
+| **`CPUQuota` para "que el video no compita con el control"** | Es un techo ABSOLUTO: congela el cgroup aunque la máquina esté ociosa, hasta ~100 ms sin aparecer en ningún profiler. Costó 77 ms por cuadro. Lo correcto es **`CPUWeight`**, que es relativo y solo muerde bajo contención real |
+| **`cv2.VideoCapture` sobre `rtsp://`/`rtmp://` de mediamtx para cualquier cosa que se mire en vivo** | Entrega cuadros de **2455 ms**, constantes desde el primero. El mismo stream sale por WebRTC en 200 ms. No lo arregla ninguna opción de FFmpeg, ni el transporte, ni los hilos, ni `writeQueueSize`. Para una vista en vivo usar **WHEP/WebRTC**; RTSP sirve para grabar, no para manejar |
+| **`writeQueueSize` bajo en mediamtx (32) para bajar latencia** | No baja nada **y rompe a Frigate**: `reader is too slow, discarding 45 frames` y artefactos en el video. El default (512) se queda |
+| **Cronómetro en pantalla filmado por la cámara, leyendo los dígitos** | Los milisegundos salen un borrón y una pantalla blanca satura el sensor. Lo que sí funciona es un **panel que parpadea** medido por brillo promedio, con el reloj servido por nosotros — `latency_clock.py` |
+| **fps promedio acumulado como prueba de que un lector le sigue el ritmo a su fuente** | Se come el transitorio de arranque (2.35 s de abrir RTSP + 2.39 s esperando el primer IDR) e **inventa un déficit**: 14.23 fps reales leídos como 12.91. Lo que sirve es la **deriva** entre el PTS del stream y el reloj monotónico, que no necesita sincronizar nada. `reader_bench.py` |
