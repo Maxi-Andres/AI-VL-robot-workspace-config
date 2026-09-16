@@ -288,6 +288,27 @@ Presupuesto medido: **40 MB/día** contra un techo de 500 MB/día compartido. 8%
 > (commit `791d9d8`) y metió **2.4 s** en la vista de manejo. Si hace falta que el bridge coma
 > H.264, el camino es WHEP, que es el que el navegador ya usa a 200 ms.
 >
+> ⚠️ **2026-09-16, más tarde: MEDIDO, y el MJPEG gana por 260 ms.** Con el enlace sano
+> (RTT ~45 ms) y el MJPEG destapado a 480x270 sin cap, entrega **14.31 fps a 89 ms**
+> (p95 127), contra **~349 ms** del H.264 por WHEP — dos métodos independientes, el stamp del
+> robot y correlación por contenido a 3.7 sigmas. Los 260 ms son el buffer de SRT (105 ms de
+> `msBuf`) más encode, mediamtx, WebRTC y decode; el decode del bridge son 6.0 ms, no es ahí.
+> **La regla quedó condicional: enlace sano → MJPEG; enlace con pérdida → WHEP** (ver
+> `PLAN-VIDEO.md` §6.b.3). Las dos están a una línea del `.env`, y el `/drive` quedó en MJPEG.
+> Lo que NO se puede es dejar las dos ramas a full: el SRT pasa de 8 a **433 descartes por
+> 31 s**.
+>
+> ✅ **2026-09-16: el camino WHEP está HECHO y sirve para el caso malo.** El bridge puede leer
+> `https://127.0.0.1:8889/robot/whep`
+> (`WhepStreamSource`, con aiortc). `/drive`, YOLO y el VLM pasaron de **4.5 a 11.9 fps** y de
+> 320 de ancho a **720p**, y el robot dejó de mandar la segunda copia: el MJPEG por TCP
+> costaba 0.17-0.25 Mbps de una subida de ~0.93 y **era el que rompía al H.264** — sacándolo,
+> las retransmisiones de SRT bajaron de 29-48% a **7.5%**. Detalle en `PLAN-VIDEO.md` §6.b.2.
+>
+> **Esto cambia la tabla de abajo en un punto:** la fila "`/drive` en MJPEG · muerto" de
+> `SOURCE=multicast` ya no decide nada, porque el bridge no depende del MJPEG. Lo que sigue
+> atado a `SOURCE=jpeg` es la **perilla de bitrate**, no la vista.
+>
 > ⚠️ **Antes de salir a campo con esto.** El multicast **no cruza la red** —se lee en el bus
 > interno del robot y lo que sale sigue siendo RTMP unicast sobre TCP, así que NAT/LTE/Starlink
 > son indiferentes—, **pero se perdió la perilla de bitrate**: en `multicast` el encoder es el
@@ -887,6 +908,41 @@ desde hacía días.
 > **La lección de método:** cuando una curva de rendimiento va al revés de lo esperado —más
 > entrada, menos salida— el problema casi nunca es el valor de la perilla. Es el mecanismo.
 > Buscar el mecanismo antes de barrer valores habría ahorrado la mitad de la sesión.
+
+### 2026-09-16 — sacar el MJPEG de TCP arregló el H.264, que no era lo que se buscaba
+
+El bridge (que alimenta `/drive`, YOLO y el VLM) leía el MJPEG del robot por HTTP: una
+**segunda copia** de la misma imagen cruzando el enlace. Se lo pasó a **WHEP**, que es leer el
+H.264 que ya llegó, en esta misma máquina y sin tocar el robot.
+
+Lo esperado: el bridge subió de **4.5 a 11.9 fps** y de 320 de ancho a **720p**, con deriva
+0.00 s.
+
+Lo no esperado, y es el dato: **el H.264 mejoró solo**. Las retransmisiones de SRT cayeron de
+29-48% de los paquetes a **7.5%**. Los 0.17 Mbps del MJPEG no eran caros por su tamaño —eran
+TCP sobre un enlace con pérdida, y cada retransmisión suya se comía la banda que el SRT
+necesitaba. Eso explica el "el H.264 empeora cuando hay movimiento": el JPEG crece con el
+detalle de la escena, el H.264 es CBR y no puede ceder.
+
+> **La lección:** en un enlace saturado, las ramas no son independientes. Medir una sola no
+> dice nada; la pregunta útil no era "cuántos fps aguanta el MJPEG" sino "por qué hay dos
+> copias de la misma imagen cruzando el enlace".
+
+**Y el mismo día, la corrección de la corrección.** Con el enlace sano (RTT ~45 ms, 1.48 Mbps
+entre las dos ramas) y el MJPEG destapado a 480x270, el MJPEG entrega **14.31 fps a 89 ms**
+contra **~349 ms** del H.264 por WHEP: **gana por 260 ms**, medido por dos métodos
+independientes. Lo que costaba era el buffer de SRT (105 ms) más el encode y el jitter buffer,
+no el lector (6.0 ms). **"TCP es el transporte equivocado" vale para un enlace con pérdida, no
+para cualquiera** — el §6.d se midió a RTT 165-384 ms, donde el MJPEG colapsaba a 1.90 fps.
+
+> **La lección de método, otra vez la misma:** una conclusión medida sobre UN enlace no es una
+> propiedad del sistema. El enlace es una variable del experimento y hay que anotarla al lado
+> del resultado.
+
+Y el techo quedó claro: con el MJPEG afuera, el H.264 llega a HQ a **14.2 fps** contra los
+14.3 que entrega la cámara. **No hay más cuadros que pedir** — `NVR_FPS` por encima de 14.3 no
+hace nada. Lo que queda por gastar son bits por cuadro: hoy son 40 kbit para un 1080p, porque
+`BITRATE=800000` se divide por un `NVR_FPS=20` que no existe.
 
 ### 2026-09-16 — 77 de los 105 ms del reescalado eran una cuota de systemd
 
