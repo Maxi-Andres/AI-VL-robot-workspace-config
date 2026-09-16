@@ -27,6 +27,7 @@ citados desde el código.
 | Qué hacer, en qué orden, y el estado real | **este archivo** |
 | Por qué el DDS no cruza de subred, y por qué dos robots no conviven en un segmento | `robot-splunk-docs/RED-Y-DDS.md` |
 | **Por qué el robot caminaba a tirones, y por qué la latencia del enlace se multiplicaba** | **`robot-splunk-docs/FRENO-INYECTADO.md`** — medido 10-09, arreglado, **falta re-medir sobre LTE y Starlink** |
+| **Cada número de video, con fecha, hora, configuración y estado del enlace** | **`robot-splunk-docs/MEDICIONES.md`** — el registro; si un número no tiene fecha y enlace al lado, no sirve |
 | Tasas y tamaños reales de los 122 tópicos del Go2 | `robot-splunk-docs/CENSO-GO2.md` |
 | Qué IP es cada una y en qué archivo se cambia | `robot-splunk-docs/IPS-Y-DONDE-CAMBIARLAS.md` |
 | Por qué se corta el video del robot (falla también en la app de Unitree) | `AI-VL-ecosystem/docs/CORTES_DE_VIDEO_Y_SOBRECALENTAMIENTO.md` |
