@@ -130,6 +130,9 @@ servicios vivos; el resto viene del 09-04.)*
 | Video: el stream | **FUNCIONANDO — y desde el 2026-09-14 por el H.264 NATIVO del Go2**: 1280x720 a **14.25 fps**, 1.78 Mbps | `SOURCE=multicast` lee RTP en `230.1.1.1:1720` y lo pasa **sin decodificar ni re-encodear**. 3.2× los cuadros por 1.24× el ancho de banda, 2.5× más eficiente por cuadro, y el Jetson sin trabajo de encoder. Antes: 1080p a 4.5 fps por el videohub. Detalle en `PLAN-VIDEO.md` §3 |
 | **Video: la latencia** | **MEDIDA 2026-09-15 — ~100-235 ms, y nunca hubo un problema de latencia** | MJPEG directo del robot **235-300 ms** (instrumentado, dos corridas). La rama H.264 **no se puede instrumentar desde un script**: el unico cliente disponible es OpenCV, que arrastra el defecto de la fila de abajo — el navegador es el unico instrumento, y da **~100 ms con multicast** y ~200 con videohub. El "~650 ms del videohub" era un error de reloj (el mismo método dio -710 y -1400 ms, imposibles) y además **no cabe en el total**. Método: `latency_clock.py` — una página que servimos nosotros, con reloj y un panel que parpadea, filmada por la cámara; los dos extremos son nuestro reloj. `PLAN-VIDEO.md` §1 y §9 |
 | **Video: el reescalado del MJPEG** | **ARREGLADO 2026-09-16 — de 105 ms a 12.8 ms (8.2×), máximo de 194 a 17.8, y la CPU del proceso de 22.4% a 3.0%** | No era el reescalado: el trabajo real son 28 ms y los otros 77 eran **CPU congelada**. `robot-video.service` tenía `CPUQuota=50%` sobre el cgroup entero (los tres procesos del pipe comparten presupuesto) y el kernel lo probaba: `nr_throttled` 14059 de 30418 períodos, **46% congelados**. Arreglado cambiando `CPUQuota` (techo absoluto) por `CPUWeight=50` (peso relativo, solo muerde bajo contención). Dos arreglos: la cuota (105→29.4) y el reescalado en los motores NVJPG del Orin NX (29.4→12.8). `PLAN-VIDEO.md` §6.c |
+| **Video sobre LTE** | ⚠️ **MEDIDO 2026-09-16 y NO ALCANZA PARA TELEOPERAR** — `/drive` 4.0 fps, H.264 3.7 fps, ~0.7 Mbps | Enlace: RTT 165-384 ms, ~0.93 Mbps. **La limitación es la PÉRDIDA, no el ancho de banda**: a 4.2 KB por cuadro usamos 0.09 de 0.93 Mbps. Curva medida: cap 5 fps entrega 3.85, cap 8 entrega 3.35, cap 15 entrega **1.90** — **mandar más entrega menos**, porque cada pérdida frena todo el stream TCP. Y bajar fps agrega hueco entre cuadros (250 ms a 4 fps), así que **no hay perilla que resuelva**. `PLAN-VIDEO.md` §6.d |
+| **Video: SRT sobre LTE** | ✅ **FUNCIONA — 2026-09-16, triplicó los cuadros por el mismo ancho de banda** (H.264 3.71 → **11.00 fps**, tráfico 0.71 → 0.74 Mbps, colas TCP en cero) | La curva se dio vuelta y eso confirma el diagnóstico: con TCP pedir 15 fps entregaba **1.90**; con SRT entrega **11.00**. Mismo enlace, misma hora. SRT recupera lo que entra en su presupuesto de 150 ms y descarta el resto (medido: 15 perdidos, 21 recuperados, **6 descartados** de 2707). Cadena: robot `srtsink` → `srt-bridge :8891` → `udp:9000` → mediamtx. `PLAN-VIDEO.md` §6.d |
+| ~~**Video: SRT sobre LTE (pendiente)**~~ | *(resuelto, ver fila de arriba)* | `srtsink` en el robot ✅, `PROTO=srt` en `run-video.sh` ✅, `srt-bridge` en HQ **corriendo hace 2 días** ✅. Falta que el `mediamtx.yml` de PRODUCCIÓN ingiera lo que el puente emite: `source: udp+mpegts://127.0.0.1:9000`, línea que **solo está en el yml de prueba**. SRT recupera lo que entra en su presupuesto de 150 ms y **descarta el resto en vez de bloquear**, que es exactamente lo que TCP no hace. `PLAN-VIDEO.md` §6.d |
 | **Video: leerlo con OpenCV** | ⚠️ **DEFECTO ABIERTO** — `cv2.VideoCapture("rtsp://mediamtx")` entrega cuadros de **2455 ms** de antigüedad | Constante desde el primer cuadro, no se acumula. El MISMO stream sale por WebRTC en 200 ms y por el ffmpeg de Frigate en 1475 ms: **escala con el cliente, no con el stream**. Descartados con medición: opciones de FFmpeg (todas), TCP vs UDP, hilos, `writeQueueSize` de mediamtx (y bajarlo rompió a Frigate). Sin causa raíz. `PLAN-VIDEO.md` §6.b |
 | Video: el lector del bridge | **cerrado el 2026-09-14 — no era lo que parecía** | El "lector 12.91 fps de una fuente de 14" era el transitorio de arranque (2.35 s de abrir RTSP + 2.39 s esperando el primer IDR) dentro de un promedio acumulado. En régimen consume **14.23 fps, la tasa exacta de la fuente**. Lo roto era un `STREAM_URL` apuntando al MJPEG que `SOURCE=multicast` apaga. `PLAN-VIDEO.md` §6 |
 | **Comandos: micro tirones al caminar** | **DIAGNOSTICADO y ARREGLADO el 2026-09-10 — falta re-medir sobre LTE y Starlink** | **No era el jitter, y no era el video: era un defecto de 2 líneas que AMPLIFICA la latencia del enlace.** El `RelayTransport` posteaba un `stop_move` antes de cada `move`, y como ese POST es bloqueante y `_start_move` lo espera con un `join`, **la ventana de frenado ≈ RTT + 9 ms**. Medido con sniffer sobre `tcp/8092`, 30 s de teleop real: **154 de 155 moves (99%) precedidos por un freno**, 320 comandos donde alcanzaban 155. En cable son 15 ms de un ciclo de 155 (10%, imperceptible); sobre LTE a 46/95 ms son 55–104 ms (35–67%) — **el robot frena más de lo que camina**. Por eso el síntoma desapareció solo al pasar a cable, sin que nadie arreglara nada. Análisis completo, aritmética y protocolo de re-medición: **`FRENO-INYECTADO.md`** |
@@ -858,6 +861,33 @@ ROS2 choca con la fase 7. Abstraer y dejar los dos, no.
 
 ## 10. Observaciones de campo
 
+### 2026-09-16 — LTE: el transporte es el problema, no las perillas
+
+Primera medición del proyecto sobre LTE. El enlace da ~0.93 Mbps con RTT de 165-384 ms, y
+**no alcanza para teleoperar**: `/drive` a 4 fps, H.264 a 3.7.
+
+Lo contraintuitivo, y está medido: **mandar más cuadros entrega menos**. Cap 5 → llegan 3.85;
+cap 15 → llegan 1.90. No es ancho de banda (usamos 0.09 de 0.93 Mbps): es que el MJPEG va por
+una sola conexión TCP, y cada pérdida cuesta un RTT de retransmisión **que bloquea todo lo que
+venía detrás**.
+
+Y la trampa no tiene salida por configuración: bajar los fps reduce la pérdida pero **agrega
+hueco entre cuadros** — a 4 fps son 250 ms de espera aunque el transporte fuera instantáneo. Se
+cambia una latencia por otra.
+
+> **Sobre un enlace con pérdida, TCP es el transporte equivocado para video en vivo.** Hace
+> falta uno que descarte y siga.
+
+**Y se probó el mismo día: SRT triplicó los cuadros** (3.71 → 11.00 fps) por el mismo ancho de
+banda, con las colas TCP en cero. La curva se dio vuelta: pedir 15 fps pasó de entregar 1.90 a
+entregar 11.00. Faltaba **una línea** en el `mediamtx.yml` de producción
+(`source: udp+mpegts://127.0.0.1:9000`), que estaba escrita y verificada en el yml de prueba
+desde hacía días.
+
+> **La lección de método:** cuando una curva de rendimiento va al revés de lo esperado —más
+> entrada, menos salida— el problema casi nunca es el valor de la perilla. Es el mecanismo.
+> Buscar el mecanismo antes de barrer valores habría ahorrado la mitad de la sesión.
+
 ### 2026-09-16 — 77 de los 105 ms del reescalado eran una cuota de systemd
 
 Reducir el MJPEG de 1080p a 640 baja el tráfico 9× (13.79 → 1.56 Mbps) pero costaba 105 ms.
@@ -998,6 +1028,10 @@ medido en el doc de datos correspondiente.
 | **El cronómetro en cuadro, en ESTE robot** | La pantalla satura la cámara y los dígitos de ms salen un borrón. Y comparar contra el reloj de la notebook dio **-710 ms** y **-1400 ms** — negativos e inconsistentes |
 | **Control-to-photon como medida de la latencia de VIDEO** | La idea es sana (los dos extremos son nuestro reloj) pero el marcador no: el robot tarda entre **311 y 1855 ms** en arrancar visiblemente, y un pulso arrancó *después* de que el dead-man ya lo había frenado. El desvío (516 ms) es del orden del número buscado, y **no se promedia**: una demora mecánica es un sesgo con varianza. El video queda exonerado (llega cada 70.5 ms ±4, sin ráfagas ni huecos). Sirve para "lo que el operador siente" (~1076 ms), **no** para latencia de video. `PLAN-VIDEO.md` §9 |
 | **`grab()` de OpenCV como forma de "no decodificar"** | En el backend FFmpeg **`grab()` igual decodifica**; `retrieve()` es solo la conversión YUV→BGR. Ahorra conversión y encode de los cuadros descartados (encode 12.91→4.28 fps), pero **no acelera el consumo**: 13.7 fps con y sin |
+| **RTMP/TCP para video en vivo sobre un enlace con pérdida** | Cada pérdida cuesta un RTT de retransmisión **y bloquea todo lo que venía detrás**. Medido sobre LTE: pedir 15 fps entregaba 1.90. Con SRT, lo mismo entrega 11.00. **Usar SRT (`PROTO=srt`) en campo, RTMP solo en cable** |
+| **Levantar `mediamtx tests/video-bench/mediamtx-test.yml` mientras SRT está en producción** | Su path `srtin` toma el **udp:9000** que producción necesita, y el error (`bind: address already in use`) no dice quién lo tiene. Costó un rato encontrarlo |
+| **Subir los fps del MJPEG sobre un enlace con pérdida** | Entrega MENOS, no más: cap 15 → 1.90 fps contra cap 5 → 3.85. Cada pérdida bloquea el stream TCP entero mientras se retransmite. Medido sobre LTE 2026-09-16 |
+| **Tocar el encoder H.264 sin fijar B-frames en 0** | `nvv4l2h264enc` los activa según qué otros parámetros toques, y **mediamtx cierra la sesión WebRTC al detectarlos** (`WebRTC doesn't support H264 streams with B-frames`): la vista en vivo se congela. Pasó al ajustar resolución/fps/keyframe para LTE |
 | **`cv2.IMREAD_REDUCED_COLOR_2/4/8` para decodificar JPEG más rápido** | OpenCV 4.2.0 en el Jetson del Go2 **ignora el flag**: los tres devuelven 1920x1080 y tardan lo mismo (20.8 ms). No hay atajo por software para el decode; el único camino real es el hardware (`nvjpegdec`) |
 | **`CPUQuota` para "que el video no compita con el control"** | Es un techo ABSOLUTO: congela el cgroup aunque la máquina esté ociosa, hasta ~100 ms sin aparecer en ningún profiler. Costó 77 ms por cuadro. Lo correcto es **`CPUWeight`**, que es relativo y solo muerde bajo contención real |
 | **`cv2.VideoCapture` sobre `rtsp://`/`rtmp://` de mediamtx para cualquier cosa que se mire en vivo** | Entrega cuadros de **2455 ms**, constantes desde el primero. El mismo stream sale por WebRTC en 200 ms. No lo arregla ninguna opción de FFmpeg, ni el transporte, ni los hilos, ni `writeQueueSize`. Para una vista en vivo usar **WHEP/WebRTC**; RTSP sirve para grabar, no para manejar |
