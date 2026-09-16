@@ -130,7 +130,7 @@ servicios vivos; el resto viene del 09-04.)*
 | Video: el stream | **FUNCIONANDO — y desde el 2026-09-14 por el H.264 NATIVO del Go2**: 1280x720 a **14.25 fps**, 1.78 Mbps | `SOURCE=multicast` lee RTP en `230.1.1.1:1720` y lo pasa **sin decodificar ni re-encodear**. 3.2× los cuadros por 1.24× el ancho de banda, 2.5× más eficiente por cuadro, y el Jetson sin trabajo de encoder. Antes: 1080p a 4.5 fps por el videohub. Detalle en `PLAN-VIDEO.md` §3 |
 | **Video: la latencia** | **MEDIDA 2026-09-15 — ~100-235 ms, y nunca hubo un problema de latencia** | MJPEG directo del robot **235-300 ms** (instrumentado, dos corridas). La rama H.264 **no se puede instrumentar desde un script**: el unico cliente disponible es OpenCV, que arrastra el defecto de la fila de abajo — el navegador es el unico instrumento, y da **~100 ms con multicast** y ~200 con videohub. El "~650 ms del videohub" era un error de reloj (el mismo método dio -710 y -1400 ms, imposibles) y además **no cabe en el total**. Método: `latency_clock.py` — una página que servimos nosotros, con reloj y un panel que parpadea, filmada por la cámara; los dos extremos son nuestro reloj. `PLAN-VIDEO.md` §1 y §9 |
 | **Video: el reescalado del MJPEG** | **ARREGLADO 2026-09-16 — de 105 ms a 12.8 ms (8.2×), máximo de 194 a 17.8, y la CPU del proceso de 22.4% a 3.0%** | No era el reescalado: el trabajo real son 28 ms y los otros 77 eran **CPU congelada**. `robot-video.service` tenía `CPUQuota=50%` sobre el cgroup entero (los tres procesos del pipe comparten presupuesto) y el kernel lo probaba: `nr_throttled` 14059 de 30418 períodos, **46% congelados**. Arreglado cambiando `CPUQuota` (techo absoluto) por `CPUWeight=50` (peso relativo, solo muerde bajo contención). Dos arreglos: la cuota (105→29.4) y el reescalado en los motores NVJPG del Orin NX (29.4→12.8). `PLAN-VIDEO.md` §6.c |
-| **Video sobre LTE** | ⚠️ **MEDIDO 2026-09-16 y NO ALCANZA PARA TELEOPERAR** — `/drive` 4.0 fps, H.264 3.7 fps, ~0.7 Mbps | Enlace: RTT 165-384 ms, ~0.93 Mbps. **La limitación es la PÉRDIDA, no el ancho de banda**: a 4.2 KB por cuadro usamos 0.09 de 0.93 Mbps. Curva medida: cap 5 fps entrega 3.85, cap 8 entrega 3.35, cap 15 entrega **1.90** — **mandar más entrega menos**, porque cada pérdida frena todo el stream TCP. Y bajar fps agrega hueco entre cuadros (250 ms a 4 fps), así que **no hay perilla que resuelva**. `PLAN-VIDEO.md` §6.d |
+| **Video sobre LTE** | ⚠️→✅ **Depende del día del enlace, y eso es el hallazgo.** Con RTT 165-384 ms no alcanzaba (`/drive` 4.0 fps, H.264 3.7). Con RTT 43 ms y **3.12 Mbps medidos con iperf3**, el `/drive` va a **14.3 fps con 89 ms** de latencia. | Enlace: RTT 165-384 ms, ~0.93 Mbps. **La limitación es la PÉRDIDA, no el ancho de banda**: a 4.2 KB por cuadro usamos 0.09 de 0.93 Mbps. Curva medida: cap 5 fps entrega 3.85, cap 8 entrega 3.35, cap 15 entrega **1.90** — **mandar más entrega menos**, porque cada pérdida frena todo el stream TCP. Y bajar fps agrega hueco entre cuadros (250 ms a 4 fps), así que **no hay perilla que resuelva**. `PLAN-VIDEO.md` §6.d |
 | **Video: SRT sobre LTE** | ✅ **FUNCIONA — 2026-09-16, triplicó los cuadros por el mismo ancho de banda** (H.264 3.71 → **11.00 fps**, tráfico 0.71 → 0.74 Mbps, colas TCP en cero) | La curva se dio vuelta y eso confirma el diagnóstico: con TCP pedir 15 fps entregaba **1.90**; con SRT entrega **11.00**. Mismo enlace, misma hora. SRT recupera lo que entra en su presupuesto de 150 ms y descarta el resto (medido: 15 perdidos, 21 recuperados, **6 descartados** de 2707). Cadena: robot `srtsink` → `srt-bridge :8891` → `udp:9000` → mediamtx. `PLAN-VIDEO.md` §6.d |
 | ~~**Video: SRT sobre LTE (pendiente)**~~ | *(resuelto, ver fila de arriba)* | `srtsink` en el robot ✅, `PROTO=srt` en `run-video.sh` ✅, `srt-bridge` en HQ **corriendo hace 2 días** ✅. Falta que el `mediamtx.yml` de PRODUCCIÓN ingiera lo que el puente emite: `source: udp+mpegts://127.0.0.1:9000`, línea que **solo está en el yml de prueba**. SRT recupera lo que entra en su presupuesto de 150 ms y **descarta el resto en vez de bloquear**, que es exactamente lo que TCP no hace. `PLAN-VIDEO.md` §6.d |
 | **Video: leerlo con OpenCV** | ⚠️ **DEFECTO ABIERTO** — `cv2.VideoCapture("rtsp://mediamtx")` entrega cuadros de **2455 ms** de antigüedad | Constante desde el primer cuadro, no se acumula. El MISMO stream sale por WebRTC en 200 ms y por el ffmpeg de Frigate en 1475 ms: **escala con el cliente, no con el stream**. Descartados con medición: opciones de FFmpeg (todas), TCP vs UDP, hilos, `writeQueueSize` de mediamtx (y bajarlo rompió a Frigate). Sin causa raíz. `PLAN-VIDEO.md` §6.b |
@@ -887,6 +887,11 @@ ROS2 choca con la fase 7. Abstraer y dejar los dos, no.
 Primera medición del proyecto sobre LTE. El enlace da ~0.93 Mbps con RTT de 165-384 ms, y
 **no alcanza para teleoperar**: `/drive` a 4 fps, H.264 a 3.7.
 
+> ⚠️ **Ese 0.93 era lo OBSERVADO, no la capacidad — y el mismo día el enlace dio 3.12 Mbps.**
+> Medido con `iperf3` robot→HQ con el video corriendo encima: 1.67 Mbps de iperf + 0.76 del
+> MJPEG + 0.69 del H.264, y es un piso. El RTT había bajado a 22.7-63.8 ms con 0% de pérdida.
+> **Todo lo de abajo vale para el enlace de esa mañana, no para "LTE".**
+
 Lo contraintuitivo, y está medido: **mandar más cuadros entrega menos**. Cap 5 → llegan 3.85;
 cap 15 → llegan 1.90. No es ancho de banda (usamos 0.09 de 0.93 Mbps): es que el MJPEG va por
 una sola conexión TCP, y cada pérdida cuesta un RTT de retransmisión **que bloquea todo lo que
@@ -938,6 +943,17 @@ para cualquiera** — el §6.d se midió a RTT 165-384 ms, donde el MJPEG colaps
 > **La lección de método, otra vez la misma:** una conclusión medida sobre UN enlace no es una
 > propiedad del sistema. El enlace es una variable del experimento y hay que anotarla al lado
 > del resultado.
+
+**Y la capacidad del enlace, medida por primera vez de verdad** (antes solo se anotaba lo que
+se estaba usando): `iperf3` robot→HQ con el video encima da **3.12 Mbps de subida total** —
+1.67 de iperf, 0.76 del MJPEG, 0.69 del H.264— contra los **0.93 "observados"** de la mañana.
+Más del triple, y sigue siendo un piso. El costo de saturar, en la misma prueba: el SRT pasó
+de 7.5% a 23% de retransmisiones y de 8 a 41 descartes, mientras el MJPEG por TCP no perdió
+tasa. Comando anotado en `PLAN-VIDEO.md` §6.d.
+
+> **Y la consecuencia práctica:** "capacidad observada" NO es capacidad. Si un número de banda
+> no salió de saturar el enlace a propósito, es el consumo, y usarlo como techo lleva a
+> optimizar contra un límite que no existe — que es exactamente lo que se hizo media sesión.
 
 Y el techo quedó claro: con el MJPEG afuera, el H.264 llega a HQ a **14.2 fps** contra los
 14.3 que entrega la cámara. **No hay más cuadros que pedir** — `NVR_FPS` por encima de 14.3 no
