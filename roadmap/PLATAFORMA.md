@@ -277,51 +277,28 @@ Todo esto está en pie y verificado; es mantenimiento, no construcción.
 
 ### Health check
 
+**Es un script, no un bloque para copiar y pegar:**
+
 ```bash
-cd ~/Desktop
-
-# Herramientas (jscpd SIEMPRE como `bunx jscpd`: el shim global de bun ejecuta node, que no está)
-for t in ruff pre-commit pip-audit codebase-memory-mcp bun; do printf '%-22s %s\n' "$t" "$($t --version 2>&1|head -1)"; done
-AI-VL-ecosystem/AI-VL-core/.venv/bin/pytest --version
-(cd AI-VL-ecosystem/AI-VL-frontend && bunx eslint --version && bunx vitest --version)
-
-# Lint: los seis repos Python y el frontend tienen que dar limpio
-for r in AI-VL-ecosystem/AI-VL-core AI-VL-ecosystem/AI-VL-backend \
-         robot-ecosystem/robot-telemetry-agent robot-ecosystem/robot-command-relay \
-         robot-ecosystem/robot-video-pipeline unitree_ros2; do
-  printf '%-24s ' "$(basename $r)"; (cd $r && ruff check --no-cache -q && echo OK)
-done
-(cd AI-VL-ecosystem/AI-VL-frontend && bunx eslint src && bun run typecheck)
-
-# Tests: las SEIS suites, 105 passed + 8 xfailed en total (2026-09-10). Antes esto corría
-# solo dos de las seis, así que el número de §2 no se podía verificar con el health check.
-for d in unitree_ros2/robot_executor unitree_ros2/robot_camera_bridge \
-         robot-ecosystem/robot-command-relay robot-ecosystem/robot-video-pipeline \
-         AI-VL-ecosystem/AI-VL-backend AI-VL-ecosystem/AI-VL-core; do
-  printf '%-42s ' "$d"; (cd $d && python3 -m pytest -q 2>&1 | tail -1)
-done
-# Y los 8 xfail con su motivo, que es donde viven los defectos abiertos (§7.3):
-(cd unitree_ros2/robot_executor && python3 -m pytest -q -rxX | /usr/bin/grep '^XFAIL')
-
-# El gate de commit, exactamente como lo invoca git (NO --all-files: eso saltea los archivos
-# sin trackear y da un falso OK en tests nuevos)
-for r in AI-VL-ecosystem/AI-VL-{core,backend,frontend} unitree_ros2 \
-         robot-ecosystem/robot-{telemetry-agent,command-relay,video-pipeline}; do
-  (cd $r && git add -A && pre-commit run >/dev/null 2>&1; printf '%-24s rc=%s\n' "$(basename $r)" $?)
-done
-
-# El grafo
-.claude/hooks/reindex-if-needed.sh && echo "reindex OK"
-
-# El HEC de Splunk
-curl -sk --max-time 5 https://192.168.20.200:8088/services/collector/health
-
-# Frigate: si camera_fps es 0, el stream está caído
-curl -s --max-time 5 http://127.0.0.1:5000/api/stats | python3 -c "import sys,json;print(json.load(sys.stdin)['cameras'])"
+~/Desktop/.claude/check.sh           # herramientas + lint + tests + grafo (rápido, local)
+~/Desktop/.claude/check.sh --net     # + Splunk HEC y Frigate
+~/Desktop/.claude/check.sh --gate    # + pre-commit (stagea y puede REESCRIBIR archivos)
+~/Desktop/.claude/check.sh --all     # todo
 ```
 
-Dos cosas que esto **no** puede chequear, porque se cargan al arrancar la sesión: que `/mcp`
-muestre `codebase-memory-mcp` **connected**, y que el hook de reindex dispare al inicio (si no,
-abrir `/hooks` una vez recarga la config).
+Sale con código != 0 si algo está en rojo, así sirve de gate. Nada necesita el robot.
+
+> **Por qué dejó de ser prosa (2026-09-22).** Vivía acá como 40 líneas de bash dentro de un
+> `.md`, y la prosa no se ejecuta: se pudre callada. La primera vez que se corrió entera a
+> mano salieron dos defectos con semanas de antigüedad —`python3 -m pytest` fallaba en los dos
+> repos que tienen venv, y el conteo de tests del §2 estaba **71 atrás** (decía 175, eran
+> 246)—. Por eso el script **mide** el total y lo compara contra lo que el ROADMAP §2 declara,
+> en vez de que alguien lo escriba a mano.
+
+Dos cosas que el script **no** puede chequear, porque se cargan al arrancar la sesión: que
+`/mcp` muestre `codebase-memory-mcp` **connected**, y que el hook de reindex dispare al inicio
+(si no, abrir `/hooks` una vez recarga la config). Y una tercera, que es de método: la frescura
+del grafo **no** la mide `detect_changes` — se verifica buscando con `search_graph` un símbolo
+recién escrito.
 
 ---

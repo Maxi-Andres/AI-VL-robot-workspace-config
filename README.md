@@ -44,6 +44,7 @@ directory no repo tracked — one wiped machine and it was gone.
 | `settings.json` | Registers the hook on SessionStart/Stop and enables the MCP server. |
 | `mcp.json` | The `codebase-memory-mcp` declaration, linked to `../.mcp.json` by `install.sh`. |
 | `CLAUDE.md` | Always-on directives, linked to `../CLAUDE.md` so Claude Code loads it when a session opens at `~/Desktop`. Kept short by design. |
+| `check.sh` | **The workspace health check, executable.** Tools, lint, the six test suites, the graph; `--net` adds Splunk/Frigate, `--gate` adds pre-commit. Exits non-zero on red. It measures the test total and compares it against what `ROADMAP.md` §2 declares — because the number silently drifted 71 tests behind while this lived as prose in a markdown file. |
 | `ROADMAP.md` | **The single source of truth — orientation half.** How to read (§0), why the two robots differ (§1), the verified state of every capability (§2), what blocks right now (§4) and the open decisions (§9). In Spanish — it is planning narrative. **Start here after a break.** Replaced `STATE.md` on 2026-08-28, absorbing four scattered backlogs; split into `roadmap/` on 2026-09-22 when it hit 1150 lines. |
 | `roadmap/GO2.md` | Track A (§5) — the Go2 worklist. The current focus. |
 | `roadmap/G1.md` | Track B (§6) — the G1 worklist. Parked while the Go2 is the focus. |
