@@ -136,7 +136,7 @@ Presupuesto medido: **40 MB/día** contra un techo de 500 MB/día compartido. 8%
 > mandar menos pierde menos, **sobre un enlace malo el movimiento es volver a `SOURCE=jpeg`**,
 > que sigue entero. Nada se midió todavía sobre LTE ni Starlink.
 
-**Historia, para no repetirla** — dos hipótesis centrales de este documento resultaron falsas:
+**Historia, para no repetirla** — dos hipótesis centrales del ROADMAP resultaron falsas:
 
 | Decía | Es |
 |---|---|
@@ -202,7 +202,7 @@ Más adelante:
       Se probó adentro del Jetson y falla igual que desde afuera: el tópico existe, nuestro
       lector **empareja** (los suscriptores suben de 1 a 2), y aun así **recibe 0 bytes y el
       callback nunca corre**. No es red ni buffers — es la deserialización del mensaje. Los
-      "30 fps" que este documento citaba nunca se verificaron; lo medido por multicast es
+      "30 fps" que el ROADMAP citaba nunca se verificaron; lo medido por multicast es
       **14.25**. Ver §11 y `PLAN-VIDEO.md` §3.1.
 - [ ] **Sin dueño `src/go2_h264_stream.cpp`**, que quedó de aquel intento. Hoy `build.sh` lo
       compila siempre, así que un error ahí rompe el build de producción. Borrarlo o dejarlo

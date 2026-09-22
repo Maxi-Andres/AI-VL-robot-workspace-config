@@ -33,7 +33,7 @@ contradecían entre sí.
 | `AI-VL-core/docs/ARCHITECTURE.md` §10 | roadmap de fases 0-5 como trabajo futuro | Fases 0,1,2,4,5 **ya construidas**; solo falta la 3 (persistencia) |
 | `Telemetria-Splunk.md` | plan completo con checkboxes vivos | Superado por `PLAN.md` desde el 2026-08-19. **Borrado** |
 | `G1_FASES_Y_CREAR_SKILLS.md` | cita `~/Desktop/CONTROL_POR_VOZ_G1.md` | Ruta muerta desde el renombre del 27-08 |
-| 4 docs de control del G1 | el mismo roadmap de fases 0-5, tres veces | Consolidado acá. Dos borrados |
+| 4 docs de control del G1 | el mismo roadmap de fases 0-5, tres veces | Consolidado en el ROADMAP. Dos borrados |
 
 **Correcciones del 2026-09-01 al 09-04** (sesión de licencia + ThousandEyes):
 
@@ -45,17 +45,17 @@ contradecían entre sí.
 | `PLAN.md` §12 | *"¿cuánto consume la otra persona?"* — abierto | **~138 MB/día**, telemetría Cisco (WLC 9800 + CURWB) por HEC |
 | `PLAN.md` §2.3 | el contenedor de TE del Jetson es **"(Cisco)"**, implícitamente ajeno | Está en la org **propia** `SILK TECH SRL - 178`, con admin nuestro |
 | `PLAN.md` §388 | *"Contenedor ThousandEyes (IOx) en el IR1101: RUNNING"* | El agente `LAB-IR-1101` figura **offline desde ~2026-08-22**, igual que el del Jetson |
-| Este documento, 2026-08-31 | *"la app de Splunkbase hace pull, no expone nada"* | **Falso**: la app no hace pull. Los **dos** caminos oficiales son push a HEC |
+| El ROADMAP, 2026-08-31 | *"la app de Splunkbase hace pull, no expone nada"* | **Falso**: la app no hace pull. Los **dos** caminos oficiales son push a HEC |
 | `REDEPLOY-EN-EL-ROBOT.md`, 2026-08-27 | `git clone` sin rama | Durante un tiempo la rama por defecto estaba **3-8 commits atrás** de `dev` y el clone dejaba código viejo sin fallar. **Resuelto el 10-09**: `dev` mergeado a la principal, el robot vive en `main` |
 
-**Correcciones del 2026-09-10** (auditoría de este documento contra el código). Las cinco son
-de **este archivo**, que es lo que las hace graves: la fuente de la verdad estaba desfasada.
+**Correcciones del 2026-09-10** (auditoría del ROADMAP contra el código). Las cinco son del
+**propio ROADMAP**, que es lo que las hace graves: la fuente de la verdad estaba desfasada.
 
 | Decía | Realidad (2026-09-10) |
 |---|---|
 | Cabecera: los cuatro docs absorbidos *"borrados"* | Tres sí; `ARQUITECTURA_ROBOT_G1_PROPUESTA.md` sigue trackeado y con **dos referencias vivas**. Pendiente en §7.6 |
 | §2: *"70 pasan, 6 xfail — executor 24+2"* | **105 pasan, 8 xfail** — el executor tiene 59+4. Nadie actualizó el número al agregar `test_deadman_contract.py` |
-| §7.3: *"Los 4 xfails estrictos"* | Son **8**, y los dos que faltaban son **P0 en el camino del robot en campo** (`RelayTransport`). Un xfail escrito y no registrado acá es un defecto que nadie va a priorizar |
+| §7.3: *"Los 4 xfails estrictos"* | Son **8**, y los dos que faltaban son **P0 en el camino del robot en campo** (`RelayTransport`). Un xfail escrito y no registrado en el ROADMAP es un defecto que nadie va a priorizar |
 | §7.1: `SAFE_MODE` en `:89`, request en `:1260` | `:90` y `:1256`. Las cuatro de `# noqa: S104` sí estaban exactas |
 | §0: *"Aplicado el 10-09 en los tres repos del robot"* | Cierto pero incompleto: `robot-ecosystem`, `robot-splunk-docs` y `unitree_ros2` quedaron fuera. Tabla completa de las 11 ramas en §0 |
 

@@ -245,8 +245,8 @@ libreta de ideas; lo que se decide hacer sube acá.
 - [ ] **`AI-VL-frontend` está en la rama `feature/both-robots-same-tiem`** mientras sus tres
       hermanos están en `...same-time`. Verificado el 2026-09-10, sigue así. Va a molestar
       cuando los PR suban juntos.
-- [ ] **Cerrar `ARQUITECTURA_ROBOT_G1_PROPUESTA.md`**, que la cabecera de este documento daba
-      por borrado desde el 28-08 y sigue trackeado (ver el aviso de arriba de todo). Antes de
+- [ ] **Cerrar `ARQUITECTURA_ROBOT_G1_PROPUESTA.md`**, que la cabecera del ROADMAP daba
+      por borrado desde el 28-08 y sigue trackeado (ver el aviso al principio de `../ROADMAP.md`). Antes de
       borrarlo hay que sacar las dos referencias vivas: `AI-VL-ecosystem/ROBOT_CONTROL.md` y
       `docs/G1_FASES_Y_CREAR_SKILLS.md`. Si algo suyo todavía vale, sube a §6; si no, se borra
       y git lo recuerda.
@@ -265,8 +265,15 @@ Todo esto está en pie y verificado; es mantenimiento, no construcción.
   propósito (standard §9 explica por qué).
 - **CI**: 7/7 verdes, los repos del robot sobre `ubuntu-22.04` con **Python 3.8**. Ya se ganó
   el sueldo: agarró un `set[str]` que pasa en 3.14 y explota en 3.8.
-- **Grafo**: 12 proyectos indexados, refresco en session start/stop, UI en
-  `http://127.0.0.1:9749`.
+- **Grafo**: 12 proyectos indexados, UI en `http://127.0.0.1:9749`. Desde el **2026-09-22** el
+  refresco es por **`PostToolUse`** además de session start/stop: el grafo queda al día en la
+  misma edición, no un turno después (0,165 s, asíncrono). Ese mismo día se arregló un defecto
+  del hook que lo hacía ver **solo el primer cambio de cada archivo** — la firma era
+  `sha1(git status --porcelain)`, que es idéntica para "modificado" y "modificado otra vez";
+  ahora sigue contenido (`git diff HEAD` + los untracked). Dos advertencias sobre el grafo, las
+  dos medidas ese día, están en el `CLAUDE.md` del workspace: `detect_changes` **no** sirve
+  para saber si el índice está viejo, y el servidor MCP puede responder desde una vista más
+  vieja que el store.
 
 ### Health check
 

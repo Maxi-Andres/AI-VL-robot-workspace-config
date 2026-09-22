@@ -20,9 +20,11 @@ está abajo, en §0.
 
 ## 0. Cómo leer esto
 
-Este documento es la autoridad sobre **qué hay que hacer y en qué orden**. No sobre *por qué*:
-eso vive en los documentos de datos, que siguen intactos porque son evidencia medida y están
-citados desde el código.
+El ROADMAP —este archivo más los cuatro de `roadmap/`— es la autoridad sobre **qué hay que
+hacer y en qué orden**. No sobre *por qué*: eso vive en los documentos de datos, que siguen
+intactos porque son evidencia medida y están citados desde el código. Lo que tenés abierto es
+la mitad de **orientación**; las listas de trabajo están en `roadmap/`, y el mapa está más
+abajo en esta misma sección.
 
 | Autoridad sobre | Documento |
 |---|---|
@@ -58,6 +60,11 @@ menos sentido tenía dentro del archivo que se abre todos los días.
 | `roadmap/G1.md` | §6 — Track B, el G1 | cuando se retome el G1 |
 | `roadmap/PLATAFORMA.md` | §7 app y seguridad · §8 tooling y health check | trabajo que no toca ningún robot |
 | `roadmap/BITACORA.md` | §3 correcciones · §10 observaciones de campo · §11 lo ya descartado | cuando hace falta saber **por qué** algo es como es |
+
+> 🛑 **La excepción: `BITACORA.md` §11, "lo ya descartado".** Es la única parte de la bitácora
+> que hay que leer ANTES y no DESPUÉS: son ~30 caminos que ya se probaron y fallaron, cada uno
+> con su motivo medido. Si vas a proponer algo de video, de red o de medición de latencia,
+> revisalo primero — está lleno de ideas que suenan bien y ya costaron una sesión cada una.
 
 **La numeración de secciones no cambió**, así que cualquier `§5.2` ya escrito en un doc o en un
 comentario del código sigue resolviendo. Solo hay que saber en qué archivo está, y eso es la
