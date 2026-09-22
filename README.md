@@ -44,7 +44,11 @@ directory no repo tracked — one wiped machine and it was gone.
 | `settings.json` | Registers the hook on SessionStart/Stop and enables the MCP server. |
 | `mcp.json` | The `codebase-memory-mcp` declaration, linked to `../.mcp.json` by `install.sh`. |
 | `CLAUDE.md` | Always-on directives, linked to `../CLAUDE.md` so Claude Code loads it when a session opens at `~/Desktop`. Kept short by design. |
-| `ROADMAP.md` | **The single source of truth**: what to do per track (Go2 itinerant / G1 on-site / AI-VL app / platform), the verified state of every capability, the corrections log, and the health check. In Spanish — it is planning narrative. **Start here after a break.** Replaced `STATE.md` on 2026-08-28, absorbing four scattered backlogs. |
+| `ROADMAP.md` | **The single source of truth — orientation half.** How to read (§0), why the two robots differ (§1), the verified state of every capability (§2), what blocks right now (§4) and the open decisions (§9). In Spanish — it is planning narrative. **Start here after a break.** Replaced `STATE.md` on 2026-08-28, absorbing four scattered backlogs; split into `roadmap/` on 2026-09-22 when it hit 1150 lines. |
+| `roadmap/GO2.md` | Track A (§5) — the Go2 worklist. The current focus. |
+| `roadmap/G1.md` | Track B (§6) — the G1 worklist. Parked while the Go2 is the focus. |
+| `roadmap/PLATAFORMA.md` | Tracks C and D (§7-§8) — the AI-VL app, security, tests, quality, tooling and the health check. Robot-agnostic. |
+| `roadmap/BITACORA.md` | The dated record (§3, §10, §11): corrections to things believed true, field observations, and what is already ruled out. Append-only; read it to learn **why**. |
 
 ## The two things that bite
 
