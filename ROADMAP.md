@@ -28,7 +28,8 @@ citados desde el código.
 | Por qué el DDS no cruza de subred, y por qué dos robots no conviven en un segmento | `robot-splunk-docs/RED-Y-DDS.md` |
 | **Por qué el robot caminaba a tirones, y por qué la latencia del enlace se multiplicaba** | **`robot-splunk-docs/FRENO-INYECTADO.md`** — medido 10-09, arreglado, **falta re-medir sobre LTE y Starlink** |
 | **Cada número de video, con fecha, hora, configuración y estado del enlace** | **`robot-splunk-docs/MEDICIONES.md`** — el registro; si un número no tiene fecha y enlace al lado, no sirve |
-| **Que YOLO no frene al `/drive`, y que las cajas correspondan al cuadro que se ve** | **`AI-VL-ecosystem/docs/PLAN_YOLO_FRAME_PAIRING.md`** — diseñado 2026-09-16, **sin implementar** |
+| **Que YOLO no frene al `/drive`, y que las cajas correspondan al cuadro que se ve** | **`AI-VL-ecosystem/docs/PLAN_YOLO_FRAME_PAIRING.md`** — diseñado 09-16; **backend construido y probado el 09-22** (§4 items 1-5, 7 tests, verificados rompiendo el código a propósito). Faltan los items 6-7, el emparejado en el NAVEGADOR para H.264 — **a propósito**: el §7 nuevo del mismo plan los reemplaza a medias |
+| **Que YOLO y el VLM analicen la imagen que está SELECCIONADA en `/live`, no la que eligió el código** | **`AI-VL-ecosystem/docs/PLAN_YOLO_FRAME_PAIRING.md` §7** — pedido el 2026-09-22, **decidido el mismo día: UN solo selector**, el análisis sigue a la pantalla. Falta diseñarlo y construirlo. Hoy la fuente está fija: con H.264 elegido, el operador mira una imagen y pregunta por otra |
 | Tasas y tamaños reales de los 122 tópicos del Go2 | `robot-splunk-docs/CENSO-GO2.md` |
 | Qué IP es cada una y en qué archivo se cambia | `robot-splunk-docs/IPS-Y-DONDE-CAMBIARLAS.md` |
 | Por qué se corta el video del robot (falla también en la app de Unitree) | `AI-VL-ecosystem/docs/CORTES_DE_VIDEO_Y_SOBRECALENTAMIENTO.md` |
