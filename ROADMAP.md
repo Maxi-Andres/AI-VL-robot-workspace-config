@@ -252,6 +252,38 @@ Presupuesto medido: **40 MB/día** contra un techo de 500 MB/día compartido. 8%
 
 ### 5.2. Video — anda, por el H.264 nativo. Lo que falta es MEDIR la latencia
 
+> 🔴 **2026-09-22: el video de Frigate "cambia de color" solo — DIAGNOSTICADO, sin arreglar.**
+> Mirando fijo una escena estática la imagen se va aclarando, poniendo rosa y llenando de
+> ruido de croma durante ~1 minuto, y de golpe vuelve a la normalidad. **No es la cámara**
+> (la primera hipótesis, el AWB/AGC del sensor, quedó refutada): es deriva del H.264.
+>
+> Medido sobre las grabaciones del 2026-09-21, 17:35–17:42 (`signalstats` cuadro a cuadro):
+> dentro de cada GOP `Y` sube de 115.5 a 121.5, `U-128` de −4.8 a −1.9 y `V-128` de +1.3 a
+> +4.1 — monótono — y en **cada IDR vuelve exactamente a los mismos valores de partida**.
+> El reset cae clavado en el keyframe, y los GOP duran 47–81 s irregulares, así que no puede
+> ser nada del mundo real. Par decisivo: 17:38:54 (último P) contra 17:38:56 (IDR), dos
+> segundos de diferencia, rosa lavado contra imagen limpia.
+>
+> La causa de fondo es **pérdida de cuadros aguas abajo del encoder del robot**: `ffmpeg`
+> reporta **61 `Frame num gap` por segmento** en esa franja y **cero errores de decodificación**
+> — la cadena de P está rota y el decodificador no tiene cómo avisar, así que arrastra el error
+> hasta el próximo IDR. Contraprueba en la misma jornada, 14:00: **11.5 fps, IDR cada 15
+> cuadros (=`IDR_FRAMES`, 1.3 s), 0 gaps y 0 deriva** (`Y` varía 0.3 en 10 s).
+>
+> Lo que amplifica: cuando el enlace se ahoga el ritmo cae a **~1 fps**, y como `IDR_FRAMES`
+> se cuenta en CUADROS y no en segundos, el keyframe pasa de llegar cada 1.3 s a cada minuto.
+> El bitrate también queda mal: `ENC_BITRATE = BITRATE/NVR_FPS` divide por 5 pero llegan ~1 fps,
+> así que el archivo grabado da 279 kbps contra los 2 Mbps pedidos — QP altísimo, residuos
+> groseros, la deriva nunca se corrige sola.
+>
+> Pendiente, en orden: (1) encontrar dónde se pierden los cuadros entre `nvv4l2h264enc` y
+> Frigate (sospechoso: backpressure de RTMP/TCP y las colas leaky de gst — ver `srt-sobre-lte`);
+> (2) mientras tanto, bajar `IDR_FRAMES` para acotar el arrastre, asumiendo el costo de bitrate;
+> (3) revisar el divisor de rate control contra el fps REAL, no contra `NVR_FPS`.
+> Verificación rápida de que sigue pasando:
+> `ffmpeg -i <segmento>.mp4 -vf signalstats,metadata=print -f null -` y mirar si `UAVG`/`VAVG`
+> derivan dentro del GOP.
+
 > ✅ **2026-09-14: corre `SOURCE=multicast`** — el H.264 nativo del Go2 por RTP multicast en
 > `230.1.1.1:1720`, passthrough puro. 1280x720 a **14.25 fps**, 1.78 Mbps. Contra el camino
 > viejo (videohub + re-encode, 1080p a 4.5 fps): **3.2× los cuadros por 1.24× el ancho de
