@@ -37,6 +37,26 @@ Presupuesto medido: **40 MB/día** contra un techo de 500 MB/día compartido. 8%
 
 ### 5.2. Video — anda, por el H.264 nativo. Lo que falta es MEDIR la latencia
 
+> 🟡 **2026-09-23: la rama de manejo por UDP — IMPLEMENTADA, falta probarla en el robot.**
+> Sobre Starlink la vista de manejo se cortaba (TCP esperando retransmisiones); ahora puede ir
+> por UDP con paridad. Detalle y medición en `robot-splunk-docs/PLAN-VIDEO.md` §6.i.
+>
+> - [ ] Desplegar `robot/mjpeg_server.py` en el robot y reiniciar el video.
+> - [ ] `H264_UDP_PORT=8895` en `unitree_ros2/robot_camera_bridge/.env`, reiniciar el bridge.
+> - [ ] `tests/video-bench/drive_probe.py 150` sobre Starlink y comparar con los 10 cortes
+>       de TCP del 23-09. Y manejarlo.
+> - [ ] Persistir `H264_QP=40` en el `video.env` del robot (hoy dice 36) y dejar pasar
+>       `h264_qp` por el `/video-config` del relay, que hoy lo rechaza.
+>
+> 🟡 **2026-09-23: el control también — `move` por UDP, stop por los dos caminos, dead-man
+> 1 s.** Implementado y probado en loopback; falta el robot. `FRENO-INYECTADO.md` §7.2.
+>
+> - [ ] `git pull && ./build.sh` en `~/robot-command-relay`, `DEADMAN_MS=1000` y
+>       `RELAY_UDP_PORT=8097` en su `relay.env`, reiniciar el relay.
+> - [ ] `RELAY_UDP_PORT=8097` en `unitree_ros2/robot_executor/.env`, reiniciar el executor.
+> - [ ] Ver en `/health` del relay que `udp.accepted` sube mientras se maneja (si queda en 0,
+>       el NAT no deja entrar UDP y el executor sigue por HTTP).
+
 > 🔴 **2026-09-22: el video de Frigate "cambia de color" solo — DIAGNOSTICADO, sin arreglar.**
 > Mirando fijo una escena estática la imagen se va aclarando, poniendo rosa y llenando de
 > ruido de croma durante ~1 minuto, y de golpe vuelve a la normalidad. **No es la cámara**

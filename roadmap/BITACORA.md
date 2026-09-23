@@ -257,6 +257,11 @@ síntoma tenía una causa de código, no de red: ver §2 y `FRENO-INYECTADO.md`.
       `PUERTOS.md` §1, pero ya sin la variable de código encima.
 - [ ] **Re-medir sobre Starlink** — misma hora y mismo punto que LTE, o la comparación no
       vale (es el mismo error de aislamiento de variables que ya se cometió en agosto).
+      🟡 **Mitad hecha el 2026-09-23** (red y video, sin teleop): ICMP 59/379 ms con **4%
+      de pérdida**, `/cmd` 178 ms, `iperf3` 2.62↑/4.39↓ con el video encima; MJPEG 74 ms,
+      H.264 de manejo 89 ms, **NVR por SRT caído a 2.46 fps** (28-56% retrans). Falta el
+      sniffer con teleop y manejarlo. Detalle en `MEDICIONES.md` 2026-09-23. No es la
+      misma hora que LTE: sigue sin estar aislada la variable.
 
 ---
 ## 11. Lo ya descartado — no volver a intentar
