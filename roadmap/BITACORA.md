@@ -68,6 +68,31 @@ renombre los tocó a todos. No sirven para saber qué está fresco.
 ---
 ## 10. Observaciones de campo
 
+### 2026-09-29 — "H.264 me saca": el encoder segfaulteó y quedó girando, no murió
+
+**Síntoma:** en la app, elegir H.264 volvía solo a MJPEG; H.264 intra sí andaba. Frigate
+tampoco tenía imagen.
+
+**Cadena medida, de HQ hacia el robot:** mediamtx contestaba `no stream is available on path
+'robot'` a cada pedido WHEP desde que se prendió la PC (13:27). `srt-bridge` escuchaba en
+`:8891` y **nunca recibió una conexión**. El relay del robot decía `video.running: true`, pero
+eso solo mira que `run-video.sh` exista. En el robot: al arrancar, `srtsink` falló cinco veces
+con `Connection does not exist` (el túnel por LTE todavía no estaba arriba), el supervisor
+reconstruyó la captura, y en ese arranque el encoder cayó con **SIGSEGV** y quedó en `Caught
+SIGSEGV · Spinning. Please run 'gdb …'`: vivo, sin salir, así que el supervisor nunca
+reintentó y `mjpeg_server` descartó cada cuadro ("dropped to NVR"). H.264 intra no pasa por
+ese proceso, por eso andaba.
+
+**Por qué "antes andaba":** el supervisor de 09-11 cubre el crash conocido, el double free,
+que es un **SIGABRT** y sale. Un SIGSEGV lo agarra el manejador de fallas de `gst-launch`, que
+espera un debugger para siempre. Hacían falta las dos cosas juntas: arrancar con el túnel
+todavía abajo (fuerza reconstrucciones) y que una de esas reconstrucciones segfaulteara.
+
+**Arreglo:** `gst-launch-1.0 --no-fault` en `robot/run-video.sh`: un segfault pasa a ser una
+salida más y se reintenta. Test nuevo en `tests/test_supervisor.sh` que **falla sin el
+arreglo** (el encoder arranca 1 vez y se cuelga) y pasa con él. **Falta desplegarlo en el
+robot**, y el proceso colgado del 09-29 hubo que matarlo a mano.
+
 ### 2026-09-16 — LTE: el transporte es el problema, no las perillas
 
 Primera medición del proyecto sobre LTE. El enlace da ~0.93 Mbps con RTT de 165-384 ms, y
