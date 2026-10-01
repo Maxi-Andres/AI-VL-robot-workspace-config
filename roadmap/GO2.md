@@ -261,6 +261,20 @@ El relay existe con allowlist de verbos, clamp de velocidad y dead-man.
 >       contesta por `192.168.123.1`, el mismo camino que el HTTP. Falta un `tcpdump` (sudo) de
 >       `udp port 8097` en esta PC para ver de qué dirección vuelve el ack — el socket del
 >       executor está `connect()`-eado y descarta en silencio un origen distinto.
+> - **Decisión del operador (2026-10-01): el relay lleva TODO el set del SDK** — dances, saltos,
+>   flips, handstand/upright (on/off), los 6 gaits. La traba es el **Safe** del executor
+>   (`DANGEROUS_SKILLS`), que se aplica antes de cualquier transporte; el relay no tiene safe propio.
+> - **Velocidades**: el relay recortaba a 0.6 y el pad tenía un solo juego de presets, así que
+>   "normal" y "fast" eran lo mismo. Ahora presets por robot (Go2 0.3 / 1.0 / 1.8) y recorte
+>   2.0 / 1.0 / 3.0 en executor y relay. **Hay que subir `MAX_*` a mano en el `relay.env` del robot.**
+> - **Pose, leído del bus (2026-10-01):** la app entra con `2045` (FreeWalk) + `1028` (Pose, sin
+>   parámetro), y sale igual (toggle). En pose el joystick **no** usa la API (ni Move ni Euler):
+>   publica en `rt/wirelesscontroller` (y `_unprocessed`), stick derecho, ~10 Hz. **Caminando
+>   tampoco**: la app maneja todo por ese tópico, por eso se siente más ágil que nuestro `Move`.
+>   Implementado: `joy lx ly rx ry` en el sender, aceptado SOLO tras `pose_on` y cortado por
+>   cualquier otro verbo (fuera de pose esos sticks caminan sin pasar por los recortes),
+>   republicado a 10 Hz y puesto en cero al vencer el dead-man. Con pose en On, el pad manda
+>   `joy` en vez de `move`.
 > - [ ] **Walk stair**: no existe en el SDK público (ni en el upstream al 2026-10-01); el SDK
 >       de fábrica del robot tiene `SwitchGait(int)` (1011). Sin confirmar en el firmware actual.
 
