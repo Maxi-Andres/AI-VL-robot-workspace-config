@@ -246,6 +246,24 @@ Más adelante:
 
 El relay existe con allowlist de verbos, clamp de velocidad y dead-man.
 
+> 🟢 **2026-10-01: migrado y manejado por LTE.** Relay con `go2_command_sender`, todo lo que
+> llegó al robot volvió `ok` (stand_up, stand_down, balance_stand, sit, hello, moves).
+> Hallazgos y cambios de ese día, **sin commitear al escribir esto**:
+> - Los botones del panel que el relay no deja pasar ahora se ven **tachados y deshabilitados**
+>   (el executor publica `allowed_skills` por robot en `/transport`, recortado por los verbos
+>   que el relay reporta en `/health`).
+> - Se agregan al relay del Go2 `stretch`, `scrape`, `heart`, `pose_on`/`pose_off` (pose es
+>   un modo: mientras está activo, un `move` inclina el cuerpo en vez de caminar). Falta
+>   pull + build en el robot y reiniciar el executor, y probarlos.
+> - [ ] **El ack UDP no vuelve por el NAT del IR1101.** Cada tramo de manejo manda 1 move por
+>       UDP y el resto por HTTP (`no UDP acks for 0.6s — HTTP for 30s`); los stop UDP sí
+>       llegan, `udp.accepted` sube. El G1 (ruta directa, sin NAT) no lo muestra. El robot
+>       contesta por `192.168.123.1`, el mismo camino que el HTTP. Falta un `tcpdump` (sudo) de
+>       `udp port 8097` en esta PC para ver de qué dirección vuelve el ack — el socket del
+>       executor está `connect()`-eado y descarta en silencio un origen distinto.
+> - [ ] **Walk stair**: no existe en el SDK público (ni en el upstream al 2026-10-01); el SDK
+>       de fábrica del robot tiene `SwitchGait(int)` (1011). Sin confirmar en el firmware actual.
+
 - [ ] **Primer `move` real supervisado.** Ojo: el robot **tiene que estar parado**. Echado
       (`mode: 0`, `body_height` 0.089) el servicio de sport devuelve **-1**.
 - [ ] Aplicar los P0 de seguridad de §7 **antes** de este paso, no después.
