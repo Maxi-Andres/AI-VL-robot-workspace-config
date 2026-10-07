@@ -55,6 +55,11 @@ Presupuesto medido: **40 MB/día** contra un techo de 500 MB/día compartido. 8%
 >       build OK. ✅ Funcionando con el Go2 (confirmado por el operador, 2026-10-07).
 >       ✅ Medido: `/drive` 92/116 ms (p50/p95) con YOLO prendido contra 90/117 apagado.
 > - ✅ Drive intra a **640×360 QP38** (en `video.env` del robot): 84/109/135 ms, 13.7 fps, 0.68 Mbps.
+> - ⚠️ **Consumo LTE por hora** (cuentas sobre bitrates medidos, sin overhead ni
+>       retransmisiones): antes de hoy **~760 MB/h** (NVR 360 + intra 150 + MJPEG 250); desde
+>       el 07-10 13:10 **~855-900 MB/h** (NVR 585 + intra 270-315 + MJPEG 0). El 07-10 a la tarde
+>       la SIM se quedó sin datos. Para ahorrar: NVR a 0.8 Mbps y drive a 480×270/QP40 →
+>       ~510 MB/h. Detalle en `MEDICIONES.md` 2026-10-07.
 > - ✅ **NVR a 1.3 Mbps CON `latency=900` en `srt-bridge.service`** (era 150; probado a 1000 y
 >       recortado a 900 por el operador): descartes de SRT
 >       0.0% (antes 10-15% a 1.3, y 20-49% a 0.8 con la subida ocupada). Eso era la grabación
@@ -74,8 +79,13 @@ Presupuesto medido: **40 MB/día** contra un techo de 500 MB/día compartido. 8%
 >       bus de 93 a ~30 Mbps (−68%), el lector sigue en 14.26 fps, intra p50 81 ms.** Confirmar
 >       el gauge del `Fa0/0/1` en Splunk. [ ] G1: pull + build + restart (mismo binario).
 >       Ver `MEDICIONES.md` 2026-10-07 12:40.
-> - [ ] `h264_width` en vivo no recalcula el alto (queda 270 → imagen estirada). Bug en
->       `mjpeg_server.py` `set_live_params`; por ahora el tamaño se cambia en `video.env`.
+> - ✅ **Pestaña Video rehecha 2026-10-07** (por stream: Drive / Recorder / MJPEG, cada perilla
+>       dice si se aplica ya o necesita reinicio). El drive (`h264_qp`, `h264_width`) se ajusta
+>       en vivo de punta a punta: front → backend (`RobotVideoConfig`) → executor → relay
+>       (`VIDEO_PARAMS`) → `mjpeg_server`. Arreglado el bug del alto: el ancho en vivo ahora
+>       lleva su alto 16:9 par (antes 640 → 640×270), y el relay lo persiste igual.
+>       [ ] Commit + pull en el Go2 (video-pipeline y relay) + restart de `robot-video` y del
+>       relay; reiniciar la app.
 > - [ ] Si el intra "se nota" más lento en pantalla, lo que queda sin medir es el navegador
 >       (`VideoDecoder` + canvas). Ver `MEDICIONES.md` 2026-10-07.
 

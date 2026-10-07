@@ -18,6 +18,16 @@
 
 ---
 
+
+> ⚠️ **2026-10-07 — el G1 apuntaba al relay del Go2.** `G1_RELAY_URL` (y por lo tanto el ping)
+> quedó en `http://10.1.254.18:8092`: el header mostraba los dos robots "online" y un comando
+> para el G1 lo habría ejecutado el perro. Causa: *Connection* en la página Robot mantenía los
+> campos del robot anterior si la recarga no llegaba, y la URL se guarda al perder el foco.
+> Arreglado en tres capas: config corregida (`192.168.51.115:8092`); la página bloquea los
+> campos hasta cargar los del robot elegido y sólo guarda valores cambiados; y el executor
+> **rechaza** un comando si el `robot_model` que reporta el relay no es el del robot
+> (`tests/test_relay_identity.py`).
+
 ## 7. Track C — App AI-VL y seguridad
 
 ### 7.1. P0 de seguridad — reverificados línea por línea el 2026-09-10
