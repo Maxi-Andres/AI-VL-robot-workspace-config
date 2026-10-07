@@ -49,7 +49,11 @@ Presupuesto medido: **40 MB/día** contra un techo de 500 MB/día compartido. 8%
 >       el `:8093` del robot, bridge con `lag_s -0.01`. Costo: las cajas de YOLO ahora van
 >       ATRASADAS respecto al intra del `/drive` (WHEP ~200-350 ms contra ~95). Lo arregla el
 >       rediseño de YOLO (`AI-VL-ecosystem/docs/PLAN_YOLO_FRAME_PAIRING.md`): YOLO sobre los
->       mismos cuadros que se ven.
+>       mismos cuadros que se ven. ✅ **CONSTRUIDO 2026-10-07** (ítems 6-7 + §7 del plan): con
+>       H.264/intra el `/live` empareja en el navegador (captura lo que se ve → `/api/detect` →
+>       muestra ESA captura con sus cajas) y el VLM pregunta sobre el mismo cuadro. 25 tests,
+>       build OK. ✅ Funcionando con el Go2 (confirmado por el operador, 2026-10-07).
+>       ✅ Medido: `/drive` 92/116 ms (p50/p95) con YOLO prendido contra 90/117 apagado.
 > - ✅ Drive intra a **640×360 QP38** (en `video.env` del robot): 84/109/135 ms, 13.7 fps, 0.68 Mbps.
 > - ✅ **NVR a 1.3 Mbps CON `latency=900` en `srt-bridge.service`** (era 150; probado a 1000 y
 >       recortado a 900 por el operador): descartes de SRT
