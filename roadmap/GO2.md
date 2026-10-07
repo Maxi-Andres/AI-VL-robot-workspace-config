@@ -463,6 +463,9 @@ posición inventada y el panel tiene que dejarlo ver.
 > tenían `<refresh>`: los 4 gauges de interfaces del IR1101, los 3 del túnel IPsec y — el peor —
 > la de motores, que arma todo el panel de la foto. Sólo cambiaban recargando la página. Ahora
 > 60 s (motores 10 s). Igual en las 4 búsquedas base de `wlc9800-curwb.xml`. El G1 ya estaba bien.
+> ✅ **Indicador de carga** en los tableros del Go2 y del G1: un cartel flotante "Cargando datos…"
+> hasta que termina la búsqueda de motores (también con el robot apagado; en el G1 hubo que
+> agregarle la rama de 0 resultados, que no existía).
 
 **Decidido el 2026-09-04.** El modelo es **un dashboard de Splunk por robot**, no uno
 compartido con selector. `dashboard-go2.xml` es el primero y define el patrón:
