@@ -37,6 +37,44 @@ Presupuesto medido: **40 MB/día** contra un techo de 500 MB/día compartido. 8%
 
 ### 5.2. Video — anda, por el H.264 nativo. Lo que falta es MEDIR la latencia
 
+> ✅ **2026-10-07: MJPEG retirado del `/drive` del Go2.** Re-medido sobre LTE Movistar con las
+> dos vistas leídas a la vez desde el mismo instante del robot: el H.264 todo-intra llega igual
+> en la mediana (94 vs 96 ms) y mucho mejor en la cola (p99 140 vs 301), con 13.7 vs 9.8 fps y
+> 0.34 vs 0.55 Mbps, sobre una subida con 1.04 Mbps libres. Botón MJPEG tachado para el Go2 en
+> el front (`VideoTransportContext.tsx`, `MJPEG_RETIRED_FOR`); el G1 lo conserva. **La rama UDP
+> ya está desplegada** (`h264_udp_leases: 1`, `H264_QP=40` en el `video.env`).
+> - [x] **MJPEG fuera del enlace, 2026-10-07 11:50:** el bridge lee el Go2 por WHEP de mediamtx
+>       (`GO2_STREAM_URL=https://127.0.0.1:8889/robot/whep`, 720p, en el `.env` local), así que
+>       YOLO y el VLM comen el stream del NVR que ya cruza el enlace. Verificado: `clients: 0` en
+>       el `:8093` del robot, bridge con `lag_s -0.01`. Costo: las cajas de YOLO ahora van
+>       ATRASADAS respecto al intra del `/drive` (WHEP ~200-350 ms contra ~95). Lo arregla el
+>       rediseño de YOLO (`AI-VL-ecosystem/docs/PLAN_YOLO_FRAME_PAIRING.md`): YOLO sobre los
+>       mismos cuadros que se ven.
+> - ✅ Drive intra a **640×360 QP38** (en `video.env` del robot): 84/109/135 ms, 13.7 fps, 0.68 Mbps.
+> - ✅ **NVR a 1.3 Mbps CON `latency=900` en `srt-bridge.service`** (era 150; probado a 1000 y
+>       recortado a 900 por el operador): descartes de SRT
+>       0.0% (antes 10-15% a 1.3, y 20-49% a 0.8 con la subida ocupada). Eso era la grabación
+>       de Frigate con bloques y deriva violeta: keyframes de ~22 paquetes que no llegaban
+>       enteros. Costo: ~750 ms más en mediamtx (Frigate, WHEP→YOLO/VLM); el `/drive` no lo paga.
+>       Ver `MEDICIONES.md` 2026-10-07 12:22.
+> - [ ] Confirmar a la vista en Frigate que la grabación ya no se corrompe ni se pone violeta, y
+>       que vuelve la vista previa ("No Preview Found").
+> - [ ] G1: su receptor sigue en `latency=150` a propósito — por WiFi retransmite todo y no
+>       descarta (2026-10-01). Revisarlo sólo si el G1 sale por celular o aparece la misma
+>       corrupción en su grabación.
+> - ✅ **El flood multicast del `Fa0/0/1` (92-97 Mbps) lo disparamos NOSOTROS**: 89
+>       `GetImageSample`/s de `videohub_jpeg_stream` para ~14 cuadros nuevos, cada respuesta un JPEG
+>       de 128 KB que el videohub copia a multicast para un lector suyo en PC1. Unicast NO lo
+>       arregla (probado, revertido). Arreglo: `REPOLL_MS=50` en `src/videohub_jpeg_stream.cpp`
+>       (1.1 llamadas por cuadro, ninguno perdido). ✅ **Desplegado en el Go2 2026-10-07 13:08:
+>       bus de 93 a ~30 Mbps (−68%), el lector sigue en 14.26 fps, intra p50 81 ms.** Confirmar
+>       el gauge del `Fa0/0/1` en Splunk. [ ] G1: pull + build + restart (mismo binario).
+>       Ver `MEDICIONES.md` 2026-10-07 12:40.
+> - [ ] `h264_width` en vivo no recalcula el alto (queda 270 → imagen estirada). Bug en
+>       `mjpeg_server.py` `set_live_params`; por ahora el tamaño se cambia en `video.env`.
+> - [ ] Si el intra "se nota" más lento en pantalla, lo que queda sin medir es el navegador
+>       (`VideoDecoder` + canvas). Ver `MEDICIONES.md` 2026-10-07.
+
 > 🟡 **2026-09-23: la rama de manejo por UDP — IMPLEMENTADA, falta probarla en el robot.**
 > Sobre Starlink la vista de manejo se cortaba (TCP esperando retransmisiones); ahora puede ir
 > por UDP con paridad. Detalle y medición en `robot-splunk-docs/PLAN-VIDEO.md` §6.i.
@@ -416,6 +454,11 @@ posición inventada y el panel tiene que dejarlo ver.
 ---
 
 ### 5.6. Observabilidad — un tablero por robot
+
+> ✅ **2026-10-07: paneles que no se actualizaban solos.** 8 búsquedas del tablero del Go2 no
+> tenían `<refresh>`: los 4 gauges de interfaces del IR1101, los 3 del túnel IPsec y — el peor —
+> la de motores, que arma todo el panel de la foto. Sólo cambiaban recargando la página. Ahora
+> 60 s (motores 10 s). Igual en las 4 búsquedas base de `wlc9800-curwb.xml`. El G1 ya estaba bien.
 
 **Decidido el 2026-09-04.** El modelo es **un dashboard de Splunk por robot**, no uno
 compartido con selector. `dashboard-go2.xml` es el primero y define el patrón:
