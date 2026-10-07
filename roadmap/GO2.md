@@ -299,7 +299,89 @@ manipulación (nada de GR00T, nada de SONIC).
 
 ---
 
-### 5.5. GPS — hardware disponible, sin configurar
+### 5.5. GPS — funcionando de punta a punta (2026-10-07)
+
+> ✅ **2026-10-07: GPS → Jetson → Splunk → mapa, funcionando y confirmado a la vista.** Cadena:
+> módem del IR1101 (`AT+WANT=1`) → NMEA por UDP desde `10.20.0.1` → `go2_nmea_reader.py` en el
+> Jetson (`NMEA_SOURCE=10.20.0.1`) → `robot:gps` cada 5 s → dashboard del Go2 (mapa Satélite /
+> Calles / Minimal + tarjeta de estado). Lo que queda: dónde va la antena en el robot (el imán no
+> pega) y medirlo en movimiento. Historia abajo.
+>
+> 🟡 **2026-10-06: antena puesta, GPS configurado, todavía SIN datos.** Módulo `P-LTEA7-EAL`
+> (Sierra EM7421) en el subslot 0/1 del `IR1101-GO2-01` (SSH desde HQ: `10.1.254.1`). La antena
+> va en el SMA **del medio** (ícono de pin; MAIN izquierda, DIV derecha).
+> - Lo que se aprendió: **`lte gps enable` y `lte gps mode standalone` no hacen nada hasta un
+>   reset del módem** (`hw-module subslot 0/1 reload`, corta el LTE 1-2 min). Antes del reset,
+>   `show cellular 0/1/0 gps` dice "acquiring" con la lista de satélites vacía y engaña.
+> - **Prueba definitiva de si el motor GPS está vivo:** `lte gps nmea ip udp 10.20.0.1
+>   192.168.20.99 10110` y escuchar en esta PC — un GPS prendido emite NMEA cada segundo aunque
+>   no tenga fix. Ruta verificada (ping desde Loopback0 y Vlan123 a .20.99 OK). **El NMEA llega
+>   (desde 12:43:51)**: GGA/RMC/GSA/VTG/GNS de GPS y Galileo, 1 Hz — el motor está vivo. Pero
+>   **ninguna sentencia `GSV`** (cero satélites a la vista), RMC `V`, GSA `1`: a cielo abierto
+>   eso es la ANTENA, no la configuración. Primer sospechoso: conector **RP-SMA** (se enrosca
+>   pero sin pin central no hace contacto); después cable de 2.90 m o falta de bias (3-5 V en el
+>   SMA del medio). Nota: un `ss` con Recv-Q 0 NO prueba que no lleguen paquetes — el lector
+>   los consume al instante; eso hizo concluir mal "no llega NMEA" la primera vez.
+> - **Dashboard listo antes que los datos:** sección "Posición — GPS del IR1101" en
+>   `go2-telemetria-thousandeyes.xml` (mapa + estado). Contrato: `index=go2-robot-data
+>   sourcetype=robot:gps`, `lat`/`lon` en GRADOS DECIMALES, `fix` (0/1/2), `sats`, `hdop`,
+>   `alt_m`, `speed_kmh`.
+> - **Medido 2026-10-06: el SMA GPS del módulo da 0 V** (multímetro probado con una pila, V⎓ 20 V,
+>   alfiler en el contacto central, router prendido, antena desenchufada). La antena es ACTIVA
+>   (3-5 V, SMA macho con pin — bien) y sin bias su LNA no entrega señal: eso explica motor GPS
+>   vivo + cero satélites. Salvedad: algunos módems cortan el bias con la antena abierta.
+>   Solución: **bias-T GPS SMA** alimentado a 3.3-5 V (USB) entre antena y módulo; plan B,
+>   antena pasiva con cable corto. Pendiente: medir la antena en Ω (abierta = antena rota).
+> - ✅ **RESUELTO 2026-10-07: la alimentación de la antena estaba APAGADA en el módem.**
+>   `AT+WANT?` → `+WANT: 0`. Se habilitó con `AT+WANT=1` (persiste en el módem) y el SMA del
+>   medio pasó a dar tensión (medido). Cómo mandar AT en IOS-XE 26.01.2 — oculto, NO soportado:
+>   `configure terminal` → `service internal` → `end`, luego
+>   `test cellular 0/1/0 modem-at-command AT+WANT?` (el `?` literal se escribe con **Ctrl+V**
+>   antes, si no dispara la ayuda del CLI), y al terminar `no service internal` + `write memory`.
+>   Config del router guardada con `lte gps enable`, `lte gps mode standalone` y
+>   `lte gps nmea ip udp 10.20.0.1 192.168.20.99 10110`.
+>   - ✅ **Primer fix 2026-10-07 13:35:56 UTC**: 14→22 satélites a la vista (GPS, GLONASS,
+>     Galileo), SNR hasta 41 dB, HDOP 0.8-0.9, posición −34.636105, −58.399052 (HQ).
+>   - **Lector hecho** (`robot-telemetry-agent/gps/go2_nmea_reader.py`, 14 tests, probado contra
+>     el NMEA real): solo acepta datagramas del IR1101, valida checksum, convierte ddmm→decimal,
+>     suma satélites por sistema, deja de dar posición si el fix tiene más de 30 s, emite
+>     `robot:gps` cada 5 s por el mismo pipe del shipper y se cierra si muere el lector DDS.
+>   - 🟡 Deploy 2026-10-07: pull + unit reinstalada en el Jetson (21:45), IR1101 apuntado al
+>     Jetson con `lte gps nmea ip udp 192.168.123.1 192.168.123.18 10110` + `write memory`.
+>     **El IR1101 IGNORA la IP de origen configurada y manda desde su Loopback0 `10.20.0.1`**:
+>     el lector descartó todo (`ignored datagram from 10.20.0.1`, n=10000, cero eventos escritos
+>     — medido con `/proc/<pid>/io`, wchar quieto). Arreglado en el repo: `NMEA_SOURCE=10.20.0.1`
+>     en la unit y como default del lector. ✅ Desplegado 21:59 (`e274bc1`): el lector escribe un
+>     evento cada 5 s, el shipper no da errores y el spool está vacío (HEC acepta).
+>     ✅ Confirmado a la vista: el punto cae en HQ (Caseros y Av. Colonia), 11/22 satélites.
+>     El panel de estado pasó de tabla transpuesta a tarjeta (fix, posición, satélites, HDOP,
+>     altura, velocidad, botones a Google Maps/OSM) y el selector de mapa va en la línea del
+>     título (confirmado a la vista: una fila, sin hueco que moleste).
+>     Tercera opción "Minimal" = el mapa original del panel (`7b91e54`, sin opciones de tiles: el
+>     default de Splunk, que sigue al tema oscuro). Va como SEGUNDO `<map>` con `depends`, no como
+>     otra URL: apuntar el mapa de Esri a `splunk-tiles-dark` (existe, llega a z7) dibujó vacío
+>     incluso fijando el zoom, y un token no puede volver a "sin opción".
+>     Un solo token decide (`gps_dark`: un mapa `depends`, el otro `rejects`): con un token por
+>     mapa, abrir con `form.gps_base=...` en la URL mostraba los DOS (el `<init>` pisaba al input).
+>     El Minimal va con zoom 7 y tope 7 FIJOS: el zoom 15 del original solo andaba porque el mapa
+>     estaba visible al cargar y Leaflet lo recortaba; mostrado después por el selector quedaba en
+>     15 sobre ningún tile (mapa vacío con el punto).
+>   - ✅ Mapa: tiles de Esri (CARTO pide API key, OSM bloquea origen privado), trusted domain
+>     `https://server.arcgisonline.com`, zoom máx. 18 (tope de Splunk). Selector Satélite
+>     (`World_Imagery`) / Calles (`World_Street_Map`), los dos verificados a z18 en HQ; el gris
+>     `Canvas` de Esri se corta en z16. La tabla de estado lee `sats_used`/`sats_view` (el
+>     contrato viejo decía `sats`) y muestra "sin datos" en vez de "No results found".
+> - **Por qué 0 V (investigado 2026-10-07):** el EM7421 SÍ da bias en el conector GNSS
+>   (3.05-3.25 V, 100 mA) y Cisco dice que las antenas activas se alimentan del SMA GPS — pero el
+>   módem lo prende/apaga con **`AT+WANT=<0|1>`** (persistente; Sierra pide `=1` para antenas
+>   activas). No se encontró si corta el bias con la antena abierta. **IOS-XE 26.01.2 no deja
+>   mandar AT al módem:** no existe `test cellular`, `show line` no tiene línea del módem (no hay
+>   reverse telnet) y `cellular 0/1/0 lte` solo trae firmware/plmn/profile/sim/sms. Salidas:
+>   bias-T externo (recomendado), `service internal` (oculto, sin garantía) o Cisco TAC.
+> - Nota de la misma foto: **el SMA DIV del módulo está vacío** — LTE con una sola antena; poner
+>   la segunda puede ayudar con los cortes del túnel.
+> - [x] Primer fix / primeras sentencias NMEA con satélites (2026-10-07).
+> - [x] Lector NMEA en el Jetson — ver arriba.
 
 **Planificado el 2026-09-09.** Hay **antena GPS activa** (SMA, base magnética, 2.90 m) y el
 **módulo celular pluggable del IR1101 está confirmado** — que es de donde sale el GNSS.
