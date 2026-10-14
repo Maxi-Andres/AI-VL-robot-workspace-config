@@ -345,11 +345,13 @@ El relay existe con allowlist de verbos, clamp de velocidad y dead-man.
 Nada de esto está construido ni diseñado. Es el norte del Go2, distinto del G1: **no**
 manipulación, sino locomoción autónoma con un objetivo simple.
 
-- [ ] **`seguime`** — fijar (lock) a una persona y caminar detrás sola. Piezas: YOLO ya da
-      la caja de la persona; falta *tracking* con identidad estable entre frames, estimación
-      de distancia, y un lazo de control que mande velocidad al `SportClient` con el dead-man
-      del relay. No necesita IK ni percepción 3D métrica precisa: alcanza con mantener la
-      caja centrada y a un tamaño objetivo.
+- [ ] **`seguime`** — fijar (lock) a una persona y caminar detrás sola. **Plan completo:
+      `roadmap/GO2-SEGUIME.md`** (2026-10-14), 8 fases medibles, nada construido. Lo que
+      cambió con la RealSense: **todo el lazo corre en el Jetson** (cámara → YOLO con TensorRT
+      → distancia → velocidad por el relay), nunca por el LTE; la distancia se **mide** con la
+      profundidad (mediana del torso) en vez de adivinarla por el tamaño de la caja, que era
+      lo que decía acá antes; y la RealSense pasa a tener un solo dueño, la percepción, del
+      que `camera_source` toma los cuadros para el video.
 - [ ] Otros del mismo tipo, cuando `seguime` funcione: *"volvé"*, *"quedate"*, *"patrullá"*.
 
 El Go2 comparte con el G1 el intérprete de comandos y el transporte, pero **no** el track de
@@ -548,8 +550,26 @@ así que el LTE lleva una sola imagen y todas las ramas (MJPEG, H.264, intra, NV
   executor + backend y recompilar el frontend en esta PC
 - [ ] Probar en la app con el robot: los tres botones, y que Frigate no se rompa al cambiar
   de resolución (ffmpeg debería re-negociar; no se midió)
+- [x] **Primer uso con la app 2026-10-14, dos defectos y arreglados** (falta re-desplegar):
+  el NVR seguía la resolución de cada cámara a mitad de grabación y el reproductor de Frigate
+  mostraba cuadros oscuros con bordes de color → ahora `run-video.sh` fija 1920×1080 siempre.
+  Y la rama intra re-lanzaba su encoder en cada cambio de tamaño y el encoder nuevo moría
+  (SIGSEGV / double free) varias veces seguidas → ahora un solo proceso absorbe el cambio
+  (probado: 120 de 120 cuadros, sin relanzar)
+- [x] **Tercer defecto, el de fondo, arreglado 2026-10-14**: al volver de la RealSense a la
+  front la grabación quedaba verde/oscura hasta reiniciar el encoder. No era el tamaño sino el
+  **submuestreo de croma**: la front manda JPEG 4:2:2 y la RealSense salía 4:2:0, y `nvjpegdec`
+  no se re-negocia bien de 4:2:0 a 4:2:2. Ahora todo sale 4:2:2 (color: `jpegenc` desde YUY2,
+  21% de CPU en vez del 2% de `nvjpegenc`, que solo hace 4:2:0; profundidad: PIL, 38%). Probado
+  en el robot front → color → profundidad → front: los cuatro tramos bien
+- [x] **La profundidad saturaba el LTE, arreglado 2026-10-14**: la vista de manejo mandaba
+  4.5 Mbps con depth (30 fps porque seguía `MAXFPS=0`, y 18 KB por cuadro por las motas sin
+  lectura). Ahora la RealSense tiene su propio tope `RS_FPS=15` y la profundidad se rellena,
+  se filtra con mediana y sale a 424×240: medido con la cámara real y el encoder real,
+  **0.83 Mbps, 6.7 KB por cuadro, 15 fps, 26% de CPU** — lo mismo que la front
 - [ ] Medir el consumo LTE por cámara (la profundidad tiene áreas lisas, debería ser barata)
-- [ ] Distancia métrica a pedido (útil para `seguime`, §5.4) — no construida
+- [ ] Distancia métrica — no construida. Es la fase 2 de `roadmap/GO2-SEGUIME.md`: a bordo,
+  sobre la profundidad cruda, nunca sobre el video coloreado
 
 > ⚠️ **Trampa encontrada en el camino: `import numpy` solo en este Jetson come 367% de CPU.**
 > El BLAS del sistema es OpenBLAS-pthread y sus hilos giran aunque nadie los use. Con
