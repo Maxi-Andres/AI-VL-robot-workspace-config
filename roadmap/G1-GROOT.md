@@ -17,7 +17,7 @@
 | **VLM de la app** (`qwen3-vl:4b` en Ollama, `AI-VL-core`) | Entiende la escena y la frase, decide **qué** hacer ("agarrá la taza") y verifica si salió | esta PC |
 | **GR00T N1.7** (VLA, 3B) | Recibe imagen + estado del robot + una instrucción corta y devuelve **cómo** mover brazos y dedos (trozos de acción) | un servidor con GPU (no PC2, ver §3) |
 | **PC1** (cerrado) | Caminar y equilibrar. **Sigue mandando las piernas** en el camino A | el robot |
-| **PC2** (Orin NX 16 GB, JetPack 5.1.1) | Cámara + cliente de la política: lee estado, le pide acciones al servidor, las escribe en `rt/arm_sdk` y `rt/dex3/*` | el robot |
+| **PC2** (Orin NX 16 GB, JetPack 5.1.1) | Cámara + cliente de la política: lee estado, le pide acciones al servidor, las escribe en `rt/arm_sdk` y en el servicio de las manos (Inspire, ver §2) | el robot |
 
 La VLM y GR00T no compiten: la VLM es el capataz que dice "ahora agarrá la taza", GR00T es la
 mano que sabe agarrarla. GR00T trae su propia VLM adentro (Cosmos-Reason2-2B), pero solo para
@@ -26,8 +26,18 @@ condicionar el movimiento: no reemplaza a la nuestra.
 ## 2. Lo que tiene NUESTRO robot (verificado 2026-10-13 por DDS desde PC2)
 
 - 29 DoF, cintura de 3 ejes (bloqueada = roll/pitch inactivos, torque 0).
-- **Manos Dex3-1 en las dos** (`/dex3/left|right/state` con publicador): 7 motores por mano,
-  es exactamente lo que modelan los datos G1 de NVIDIA y de Unitree.
+- **Manos: Inspire de CINCO dedos, no Dex3-1.** ⚠️ **Corregido el 2026-10-14**: el usuario lo
+  vio en el robot. Antes decía "Dex3-1 en las dos", deducido de que el robot lista
+  `/dex3/left|right/state` con publicador; ese tópico existe, pero no dice qué mano tiene
+  puesta (qué lo publica, sin verificar). La Inspire tiene 6 motores por mano (no 7), se maneja
+  por su **propio servicio** (no por el firmware; no se vio ninguno corriendo) y hay dos
+  modelos: **DFQ** (RS485 por USB) y **FTP** (Ethernet, IPs `192.168.123.210/211`). El modelo
+  3D de la app usa DFQ, el del proyecto LuckyEngine; **falta confirmar cuál es** (con el robot
+  prendido: `ping 192.168.123.210` desde PC2 → FTP; un `/dev/ttyUSB*` de la mano → DFQ).
+  **Qué cambia en este plan:** todo lo que dice Dex3 abajo (datasets de Unitree "G1_Dex3",
+  `--ee dex3`, 28-D = 14 brazos + 7 + 7) hay que pasarlo a la variante Inspire: Unitree publica
+  también datasets G1 con Inspire, y `xr_teleoperate` tiene su opción de mano Inspire. La
+  dimensión pasa a 14 + 6 + 6 = 26. Sin revisar todavía en detalle.
 - `rt/arm_sdk`, `rt/hand_sdk`, `rt/user_lowcmd`, `rt/lowcmd`, odometría y nube de puntos del
   SLAM de Unitree (sin publicar mientras no corre el mapeo).
 - Cámara de cabeza: **RealSense D435i, monocular** (los datasets de Unitree usan cabeza estéreo
@@ -79,13 +89,14 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 ### Paso 0 — El robot sano, y nuestro código moviendo brazos y dedos (sin gastar nada)
 
 > **2026-10-13: se hace con una interfaz, `G1-CONTROL-ARTICULAR.md`.** Sus pasos J2 (codo por
-> `arm_sdk`) y J4 (Dex3) cubren los dos puntos de código de acá, y J1/J5 el diagnóstico de la
+> `arm_sdk`) y J4 (las manos Inspire) cubren los dos puntos de código de acá, y J1/J5 el diagnóstico de la
 > inclinación. Ese plan va primero, mientras se consigue la GPU.
 
 - [ ] Arreglar la inclinación hacia atrás (`G1.md` §6.4). Grabar demos con el robot torcido
       ensucia el dataset.
-- [ ] Dex3: correr `unitree_sdk2/example/g1/dex3/g1_dex3_example` en PC2 — primero solo leer
-      el estado, después abrir/cerrar con ganancia baja.
+- [ ] Manos Inspire (no Dex3, ver §2): identificar el modelo (DFQ/FTP), instalar su servicio
+      en PC2, primero solo leer el estado, después abrir/cerrar con fuerza baja. (Antes decía
+      correr `g1_dex3_example`: es para la otra mano.)
 - [ ] `rt/arm_sdk` desde PC2: un ejemplo propio a partir de `g1_arm7_sdk_dds_example.cpp`
       que suba el peso de 0 a 1 en 2 s, mueva un codo 20° y baje el peso. Con el robot parado
       en modo Regular (500), operador con el control en la mano.
