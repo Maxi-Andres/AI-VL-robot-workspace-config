@@ -23,8 +23,11 @@ Las piernas no se pueden mover "un poco" con el robot parado: para escribir en e
 sacarle el control a PC1, y desde ese momento nadie lo equilibra. Colgado da igual, y es
 justamente como se ven los ceros de las articulaciones.
 
-La cintura: con cintura bloqueada (`G1_WAIST_LOCK=1`, FSM 500) roll y pitch quedan en 0.00° con
-torque 0 (medido, `G1.md` §6.4); solo el yaw responde. Las tres responden en 501.
+La cintura: **solo el yaw se mueve en este robot.** Reporta `mode_machine` 6, que en la tabla de
+`g1_description` es la variante *lock waist* (`g1_29dof_lock_waist_with_hand_rev_1_0`): roll y
+pitch son articulaciones FIJAS en el URDF, y en la telemetría marcan q 0, torque 0 y
+**temperatura 0** — un motor que existe nunca marca 0 °C. O sea, no es el bloqueo de la app: no
+hay motor (deducido el 2026-10-13 de esas tres cosas; no probado mandándoles nada).
 
 ## 2. Arquitectura
 
@@ -53,19 +56,49 @@ three.js + urdf-loader  ──WebSocket──▶ AI-VL-backend  ──▶ (execu
 
 Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin eso.
 
-### J0 — Preparación (nada se mueve)
-- [ ] Tabla índice del SDK (0-28 y 0-6 de cada Dex3) ↔ nombre de articulación del URDF. El
-      lector de telemetría ya tiene los 29 nombres (`g1_telemetry_reader.cpp`, `build_motors`).
-- [ ] Mallas reducidas y servidas por la app. Verificar la licencia de `g1_description` antes de
-      meterlas en un repo.
-- [ ] Decidir el salto backend → relay (directo o por el executor, que hoy guarda el token).
-      Leer antes `AI-VL-ecosystem/docs/TRANSPORT_SDK_VS_ROS2.md`.
+> **Estado 2026-10-13: J0 ✅ y J1 construido, probado sin robot.** Falta la prueba de J1 con el
+> robot (abajo, "Para probar J1"). Lo construido:
+>
+> - **PC2:** `robot-command-relay/src/g1_joint_bridge.cpp` — lee `rt/lowstate` + las dos Dex3 y
+>   escribe una línea JSON por tick (30 Hz). **Sin publisher: no puede mover el robot.** El relay
+>   lo arranca con el primer visor de `GET /joints/stream` y lo para 10 s después del último;
+>   guarda solo la línea más nueva (un visor lento saltea, no frena a nadie); máximo 4 visores.
+>   Probado contra un publicador DDS falso, y `tests/test_joint_stream.py` (9 tests).
+> - **Executor:** `GET /joints/stream?robot=g1` lo pasa tal cual, con el token puesto acá. Se
+>   decidió el salto **por el executor**, como el video: el token queda en un solo proceso.
+>   **Bug encontrado y arreglado de paso:** `_relay_for` usaba solo el `RELAY_TOKEN` compartido,
+>   así que todo lo que pasaba por ahí hacia el G1 (también la config de video) iba con el token
+>   del Go2 → 401. Ahora usa `G1_RELAY_TOKEN` como el resto. Tests: `test_joint_stream_proxy.py`.
+> - **Backend:** `WS /ws/joints` — la línea más nueva por visor, y siempre un último mensaje
+>   `{"error", "final": true}` que dice por qué se cortó. `tests/test_joint_stream.py` (4).
+> - **Frontend:** pestaña **Joints** (`/joints`): el G1 en 3D (three.js + urdf-loader), color por
+>   temperatura, inclinación por la IMU, inspector con ángulo / rango / torque / temperatura, la
+>   tabla **piernas izquierda vs derecha** (espejada) y la lista de las 43 articulaciones.
+>   **"Recorded walk"** (o `/joints#replay`) reproduce la caminata grabada hoy: con el robot
+>   apagado ya se ve caminar con las rodillas dobladas, o sea la tabla y los signos de las
+>   piernas están bien. Modelo: 49 mallas reducidas de 31 a 5.4 MB
+>   (`scripts/build_g1_model.py`); la grabación: `scripts/build_g1_sample.py`.
+>
+> **Para probar J1 con el robot:** en PC2 `git pull && ./build.sh && sudo systemctl restart
+> robot-command-relay` (el relay del G1 tiene que estar instalado: paso 6 de la página Robot).
+> En esta PC reiniciar el executor del contenedor y correr `run.sh` (reconstruye el frontend).
+> Abrir Joints → Live robot.
+
+### J0 — Preparación (nada se mueve) ✅ 2026-10-13
+- [x] Tabla índice del SDK ↔ URDF: `AI-VL-frontend/src/lib/g1Joints.ts`, con un test que la
+      cruza contra el URDF que dibuja la página. El orden de la Dex3 (pulgar 0-2, medio 0-1,
+      índice 0-1) sale de los límites del ejemplo del SDK; medio e índice tienen límites
+      idénticos, así que esos dos pares se confirman recién mirando una mano real (J1).
+- [x] Mallas reducidas en `AI-VL-frontend/public/g1/`. **Falta confirmar la licencia** de
+      `g1_description` (repos `unitree_ros`/`unitree_mujoco` de Unitree, BSD-3 según recuerdo,
+      no verificado) antes de commitearlas.
+- [x] Salto: por el executor (ver arriba).
 - **Hecho cuando:** la tabla está escrita y el modelo se dibuja en una página de prueba.
 
 ### J1 — Visor 3D en vivo, solo lectura (riesgo cero)
-- [ ] Pestaña nueva en el header (`/joints`): el robot en 3D, girable, copiando `lowstate` y
-      las Dex3 a ~30 Hz.
-- [ ] Al pasar el mouse por una articulación: ángulo, torque y temperatura. Color por
+- [x] Pestaña nueva en el header (`/joints`): el robot en 3D, girable, copiando `lowstate` y
+      las Dex3 a ~30 Hz. (Construido; falta verlo con el robot.)
+- [x] Al pasar el mouse por una articulación: ángulo, torque y temperatura. Color por
       temperatura (los mismos datos del tablero de Splunk).
 - [ ] **Diagnóstico de la inclinación, sin mover nada:** robot colgado y en amortiguado
       (piernas sueltas, caen derechas por gravedad). Si el dibujo muestra la cadera, la rodilla
@@ -132,7 +165,7 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 
 ## 5. Decisiones abiertas
 
-- Salto backend → relay: directo o por el executor (J0).
-- Dependencias nuevas del frontend: `three` y `urdf-loader`.
-- Dónde viven las mallas reducidas y su licencia.
+- ~~Salto backend → relay~~: por el executor (2026-10-13).
+- ~~Dependencias del frontend~~: `three` 0.169.0 y `urdf-loader` 0.12.3, fijadas.
+- Licencia de las mallas en `AI-VL-frontend/public/g1/` (a confirmar antes de commitear).
 - Grúa o arnés para J5: ¿hay uno, o hay que conseguirlo?
