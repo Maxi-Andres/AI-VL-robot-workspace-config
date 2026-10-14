@@ -20,6 +20,24 @@
 
 ## 5. Track A — Go2 itinerante
 
+> **Orden de trabajo del Go2, decidido 2026-10-14** (las dos cosas grandes que vienen):
+>
+> 1. **Medir y averiguar, sin construir** — en la misma sesión: la fase 0 de "seguime" (¿le da el
+>    Jetson a YOLO + profundidad?) y la fase A0 de audio (¿el Go2 tiene parlante y mic usables?).
+>    Si el audio da "no", **ese día se compra el speakerphone USB**: es lo único con demora de
+>    entrega, y no debe frenar todo lo demás.
+> 2. **Audio de salida (A1): el robot habla.** Lo más rápido con resultado visible, y no mueve el
+>    robot: todo lo que hoy responde el VLM pasa a decirlo el robot.
+> 3. **"Seguime" fases 1-5**, con botón. Es lo más largo y lo único que mueve el robot solo.
+> 4. **Audio de entrada (A2-A3): el robot escucha**, con "pará" reconocido a bordo.
+> 5. **Unir las dos:** "seguime" y "pará" por voz (fase 6 de seguime, A4 de audio), y campo.
+>
+> Por qué en ese orden: lo que solo mide va primero porque puede cambiar los planes (si el
+> Jetson no da, "seguime" cambia; si el Go2 no tiene audio, hay que comprar). El audio de salida
+> va antes que "seguime" porque es chico, independiente y no tiene riesgo físico. Y la voz de
+> entrada va después porque "seguime" no la necesita para probarse (alcanza un botón), y el
+> mic es la parte más incierta (ruido del robot caminando).
+
 ### 5.1. Telemetría — construida, sin validar end-to-end
 
 Falta solamente cerrar el lazo, y ahora se puede porque el HEC está abierto:
@@ -576,3 +594,17 @@ así que el LTE lleva una sola imagen y todas las ramas (MJPEG, H.264, intra, NV
 > `OPENBLAS_NUM_THREADS=1`, 0%. Hoy no pega en producción (`mjpeg_server` usa el resize por
 > hardware y nunca carga numpy), pero sí pegaría el día que caiga al resize por cv2.
 > `run-video.sh` ahora lo exporta para todo lo que lanza.
+
+### 5.8. Audio — que el robot escuche y hable (pedido 2026-10-14)
+
+**Plan completo: `roadmap/GO2-AUDIO.md`.** Nada construido. Lo verificado: el Jetson **no tiene
+mic ni parlante** (solo HDMI y las líneas internas del Orin) y el SDK del Go2 solo maneja
+volumen y luces, a diferencia del G1, que sí trae TTS, reproducir y ASR. STT (Whisper) y TTS
+(Piper) ya existen en el server, pero hoy suenan y escuchan **en el navegador del operador**.
+
+- [ ] A0 — ¿El Go2 tiene parlante/mic accesibles? Si no: speakerphone USB con cancelación de eco
+- [ ] A1 — El robot habla (verbo `say` en el relay; el TTS se hace en el server)
+- [ ] A2 — El robot escucha apretando un botón (mide ruido y distancia)
+- [ ] A3 — Palabra de activación y **"pará" reconocido a bordo**, que frena sin el enlace
+- [ ] A4 — Conversación completa desde el robot, unida a "seguime"
+

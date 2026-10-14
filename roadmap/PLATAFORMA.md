@@ -211,7 +211,7 @@ libreta de ideas; lo que se decide hacer sube acá.
       telemetría caliente y pub/sub, Mongo para detecciones/chat/eventos, frames a FS/MinIO
       con referencias. Es lo mismo que *"poner una base de datos para que la ia tenga más
       contexto"* de `FIX.txt`.
-- [ ] Micrófono y parlantes del robot — cubrir lo que hace la app oficial de Unitree.
+- [ ] Micrófono y parlantes del robot — **plan del Go2 en `roadmap/GO2-AUDIO.md` (§5.8), 2026-10-14**.
 - [ ] Mejorar el TTS.
 - [ ] Examples en español en `command_common.py` (hoy el matching de skill falla seguido).
 - [ ] Batería expuesta; resolución y fps del video configurables.
