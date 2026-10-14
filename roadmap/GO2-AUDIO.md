@@ -6,6 +6,11 @@
 
 ---
 
+> **Actualización 2026-10-14 (misma tarde): A0 resuelto y A1 construido.** El Go2 SÍ tiene
+> parlante usable por DDS (`audiohub`, modo megáfono) y el mic existe pero solo por WebRTC.
+> D1 y D2 quedan resueltas a favor del hardware del robot para la SALIDA; para la entrada se
+> usa el mic del navegador por ahora. Detalle y números en `GO2.md` §5.8.
+
 ## 1. Qué se quiere
 
 - **Que el robot hable:** las respuestas de la app (el VLM, confirmaciones, "te perdí")

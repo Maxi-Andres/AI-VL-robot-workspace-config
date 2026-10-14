@@ -602,8 +602,21 @@ mic ni parlante** (solo HDMI y las líneas internas del Orin) y el SDK del Go2 s
 volumen y luces, a diferencia del G1, que sí trae TTS, reproducir y ASR. STT (Whisper) y TTS
 (Piper) ya existen en el server, pero hoy suenan y escuchan **en el navegador del operador**.
 
-- [ ] A0 — ¿El Go2 tiene parlante/mic accesibles? Si no: speakerphone USB con cancelación de eco
-- [ ] A1 — El robot habla (verbo `say` en el relay; el TTS se hace en el server)
+- [x] **A0 — resuelto 2026-10-14.** **Parlante: SÍ, el del Go2**, por el servicio `audiohub`
+      (el de la app de Unitree), que contesta por DDS desde el Jetson con el SDK que ya está:
+      modo megáfono (4001 entrar, 4003 subir el WAV en base64, 4002 salir; ids del driver
+      comunitario legion1581). Probado: se escucha, a 44.1 y a 22.05 kHz. Subir cuesta ~100 ms
+      por bloque sea cual sea el tamaño: bloques de 60 KB → 0.25 s para una frase de 2.6 s.
+      **Mic: existe pero solo por WebRTC** (pista de audio, 48 kHz estéreo), y con firmware
+      ≥ 1.1.15 pide una clave por robot que se baja con la cuenta de Unitree — pendiente, el
+      usuario eligió el mic del navegador por ahora. No hace falta comprar speakerphone
+- [x] **A1 — construido 2026-10-14, sin desplegar**: `go2_audio_sender` (C++, relay) +
+      `POST /audio/say|stop`, `GET|POST /audio/volume` en el relay (token, WAV validado, tope
+      30 s) → executor → backend `/api/robot-audio/*` (texto → Piper → robot) → app: en Drive
+      un cuadro "escribí y lo dice" + volumen 0-10 + parar, y en Live un "Speak through: This
+      device / Robot" para que las respuestas del VLM salgan por el robot. Probado en el robot
+      el proceso real: frase de 4.5 s subida en 0.65 s, una frase nueva corta a la anterior.
+      Falta: desplegar y probar de punta a punta desde la app
 - [ ] A2 — El robot escucha apretando un botón (mide ruido y distancia)
 - [ ] A3 — Palabra de activación y **"pará" reconocido a bordo**, que frena sin el enlace
 - [ ] A4 — Conversación completa desde el robot, unida a "seguime"
