@@ -60,6 +60,12 @@ Presupuesto medido: **40 MB/día** contra un techo de 500 MB/día compartido. 8%
 >       el 07-10 13:10 **~855-900 MB/h** (NVR 585 + intra 270-315 + MJPEG 0). El 07-10 a la tarde
 >       la SIM se quedó sin datos. Para ahorrar: NVR a 0.8 Mbps y drive a 480×270/QP40 →
 >       ~510 MB/h. Detalle en `MEDICIONES.md` 2026-10-07.
+> - ⚠️ **LTE re-medido 2026-10-14 10:33–10:42** (misma config que el 07-10): capacidad igual
+>       (`iperf3` 1.06 sube / 22.3 baja) y latencia igual (drive p50 80-84, p95 102-108), pero
+>       el SRT pierde **~40% en el aire contra 24-28%** y el drive muestra **22-30 cortes
+>       "missing" por 90 s** (12.4-12.6 fps); un congelamiento de 1.3 s. `latency=900` sigue en
+>       0 descartes. Parte de los cortes es la escena (intra 8.3-9.3 kB vs 6.2). Falta mirar la
+>       radio del IR1101 (RSRP/SINR). Ver `MEDICIONES.md` 2026-10-14.
 > - ✅ **NVR a 1.3 Mbps CON `latency=900` en `srt-bridge.service`** (era 150; probado a 1000 y
 >       recortado a 900 por el operador): descartes de SRT
 >       0.0% (antes 10-15% a 1.3, y 20-49% a 0.8 con la subida ocupada). Eso era la grabación
@@ -501,3 +507,52 @@ la prolijidad visual es una pasada aparte y posterior.
 > refresh ni el poller. `LICENCIA-Y-THOUSANDEYES.md` §6.7.
 
 ---
+
+### 5.7. Cámara de profundidad — RealSense D435i en el Jetson (detectada 2026-10-14)
+
+El usuario le montó al Go2 una **Intel RealSense D435i** (USB `8086:0b3a`, la misma que la
+cabeza del G1). Verificado por SSH al Jetson (`10.1.254.18`, por el túnel del IR1101):
+
+| Qué | Valor |
+|---|---|
+| Bus | USB **3** (`2-1`, 5000 Mbps) — la profundidad no anda en USB 2 |
+| Nodos | `video0` = **profundidad Z16** · `video2` = infrarrojo (GREY/Y8I/Y12I) · `video4` = **color** YUYV hasta 1920×1080 · `video1/3/5` = metadatos |
+| Software | `librealsense2` **2.50** ya instalado (viene con `ros-noetic-librealsense2`, en `/opt/ros/noetic/lib/aarch64-linux-gnu/`). **No** hay `pyrealsense2` ni las herramientas `rs-*` |
+| Color | anda por V4L2 con OpenCV (1280×720 capturado) |
+| Profundidad | **30.6 fps a 848×480**, 77 % de píxeles válidos, rango visto 0.33-3.05 m; intrínsecos fx=fy=427.6, ppx=423.0, ppy=235.4 |
+
+Dos trampas: **OpenCV 4.2 no abre `video0`** (no conoce Z16, falla en silencio) y
+**GStreamer tampoco lo lista**. La profundidad sale por librealsense; se probó llamando a la
+API C por `ctypes`, sin instalar nada en el robot.
+
+**Decidido 2026-10-14: una cámara por vez, conmutable desde la app.** No es un segundo stream:
+el robot manda UNA imagen y el operador elige cuál — `front` (la de siempre), `rs_color`
+(RealSense color) o `rs_depth` (profundidad coloreada: cerca rojo, lejos azul, sin lectura
+negro, con leyenda en metros dibujada en la imagen). Al cambiar, la cámara anterior se cierra,
+así que el LTE lleva una sola imagen y todas las ramas (MJPEG, H.264, intra, NVR) siguen el cambio.
+
+- [x] **Construido 2026-10-14**, sin desplegar:
+  - `robot-video-pipeline/robot/camera_source.py` — nuevo proceso delante de `mjpeg_server`
+    en `run-video.sh`; control en `127.0.0.1:8094/camera`, solo localhost. `CAMERA=` en
+    `video.env` decide con cuál arranca. Si la RealSense no abre, vuelve a `front` y dice por qué
+  - relay: `POST /video-config {"camera": …}` (allowlist), `GET` reporta `camera` y `cameras`
+  - backend `RobotVideoConfig.camera`; frontend `RobotCameraSwitch` (Front / RealSense / Depth)
+    en Drive y en Live, solo para el Go2
+- [x] **Probado con la RealSense real** (sonda en `/tmp` del Jetson, fuera del servicio):
+  color 15.5 fps, ~112 KB por cuadro; profundidad 14.5 fps, ~81 KB; cambio de cámara en
+  0.1-1.4 s. CPU: color ~1% + ~2% de su gst (JPEG por hardware, NVJPG), profundidad 31%
+- [x] El encoder del NVR aguanta el cambio de resolución a mitad de stream (80 cuadros
+  entraron, 80 salieron, 1080p → 720p → 480p → 1080p)
+- [ ] **Desplegar**: commit, en el Jetson `git pull` de `robot-video-pipeline` y
+  `robot-command-relay`, `sudo systemctl restart robot-video robot-command-relay`; reiniciar
+  executor + backend y recompilar el frontend en esta PC
+- [ ] Probar en la app con el robot: los tres botones, y que Frigate no se rompa al cambiar
+  de resolución (ffmpeg debería re-negociar; no se midió)
+- [ ] Medir el consumo LTE por cámara (la profundidad tiene áreas lisas, debería ser barata)
+- [ ] Distancia métrica a pedido (útil para `seguime`, §5.4) — no construida
+
+> ⚠️ **Trampa encontrada en el camino: `import numpy` solo en este Jetson come 367% de CPU.**
+> El BLAS del sistema es OpenBLAS-pthread y sus hilos giran aunque nadie los use. Con
+> `OPENBLAS_NUM_THREADS=1`, 0%. Hoy no pega en producción (`mjpeg_server` usa el resize por
+> hardware y nunca carga numpy), pero sí pegaría el día que caiga al resize por cv2.
+> `run-video.sh` ahora lo exporta para todo lo que lanza.
