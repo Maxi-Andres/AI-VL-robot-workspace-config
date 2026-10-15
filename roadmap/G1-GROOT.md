@@ -26,6 +26,9 @@ condicionar el movimiento: no reemplaza a la nuestra.
 ## 2. Lo que tiene NUESTRO robot (verificado 2026-10-13 por DDS desde PC2)
 
 - 29 DoF, cintura de 3 ejes (bloqueada = roll/pitch inactivos, torque 0).
+- **⚠️ 2026-10-15: son BrainCo (tipo Revo 2), ni Dex3-1 ni Inspire** — confirmado por Modbus
+  (`G1-CONTROL-ARTICULAR.md` J4). Unitree publica datasets `G1_Brainco_*` y `xr_teleoperate`
+  tiene `--ee brainco`: esa es la variante a usar. Lo que sigue en este punto quedó viejo.
 - **Manos: Inspire de CINCO dedos, no Dex3-1.** ⚠️ **Corregido el 2026-10-14**: el usuario lo
   vio en el robot. Antes decía "Dex3-1 en las dos", deducido de que el robot lista
   `/dex3/left|right/state` con publicador; ese tópico existe, pero no dice qué mano tiene

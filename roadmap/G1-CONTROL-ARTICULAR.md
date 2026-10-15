@@ -16,7 +16,7 @@
 | Grupo | Tópico | Quién equilibra | Cuándo |
 |---|---|---|---|
 | Brazos (7 + 7) y cintura (3) | `rt/arm_sdk`: mezcla por peso en `motor_cmd[29].q` (kNotUsedJoint) | **PC1, como siempre** | Robot parado en el piso, modo Regular (500) |
-| Dedos **Inspire** (6 + 6) | El servicio propio de la mano (a instalar, J4). **No** `rt/dex3/*`: eso es de la otra mano | No afecta | Siempre que la mano esté libre |
+| Dedos **BrainCo** (6 + 6) | Modbus RTU por `/dev/ttyUSB1-2` desde PC2 (J4). **No** `rt/dex3/*` | No afecta | Siempre que la mano esté libre |
 | **Piernas (6 + 6)** | `rt/lowcmd`, con PC1 **apagado** (`MotionSwitcherClient::ReleaseMode`) | **Nadie** | **Solo colgado** de una grúa o arnés |
 
 Las piernas no se pueden mover "un poco" con el robot parado: para escribir en ellas hay que
@@ -161,6 +161,17 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
       con el destino y el valor medido; clic en el robot selecciona la fila. "Everything back to
       where it started". El fantasma muestra solo lo que todavía no llegó (> 2°). Probado de
       punta a punta en esta PC (hombro −50°, cintura +20°, soltar).
+- [x] **Probado con el robot 2026-10-15**: "anda bien", pero el usuario lo sintió **a tirones**
+      y su compañero **trabó un brazo con la mano y siguió empujando**. Arreglado el mismo día:
+      - tirones: el deslizador manda ~10 destinos/s y el brazo iba a velocidad fija → arrancaba
+        y frenaba en seco cada vez. Ahora **aceleración limitada** (2 rad/s², `JOINT_CTL_MAX_ACC`)
+        con una curva de frenado que llega al destino sin sobrepasarlo ni dar el último salto
+        (test: pico de aceleración ≤ 2.3 rad/s² incluida la llegada), y **200 Hz** en vez de 50
+        (verificado por DDS).
+      - empuje: a kp 60, el 60 % de 25 N·m recién se alcanza ~14° atrás del comando. Ahora
+        **30 % y 150 ms** (~7°; `JOINT_CTL_STALL_FRAC`/`_MS`), y la página avisa "<joint> pushed
+        against something: it stopped where it was".
+      Falta probar estos dos cambios con el robot.
 - [ ] Poses guardadas (nombre → ángulos). STOP siempre visible (hoy: Release y el stop del
       Drive).
 - **Para probar con el robot:** `git pull && ./build.sh && sudo systemctl restart
@@ -171,7 +182,39 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 - **Hecho cuando:** se arma una pose de brazos completa desde la página y se vuelve a la
   inicial, sin desequilibrio y sin temperaturas raras.
 
-### J4 — Los dedos (manos Inspire, no Dex3)
+### J4 — Los dedos (manos **BrainCo**, no Inspire ni Dex3)
+
+> **⚠️ 2026-10-15, confirmado: son BrainCo (tipo Revo 2), no Inspire.** Las fotos del usuario
+> muestran el anillo de luz verde en el dorso y la palma de goma negra; y las dos contestan por
+> **Modbus RTU a 460800**: `/dev/ttyUSB1` id **127** (derecha) y `/dev/ttyUSB2` id **126**
+> (izquierda) (lectura de 1 registro, fc 3 y 4). Van a una cajita en la espalda conectada por
+> USB-C a PC2 (FTDI FT4232H); ese USB estaba suelto. Todo lo que dice "Inspire" abajo y en §1/§2
+> quedó viejo: la investigación de abajo vale como descarte. **El modelo 3D de la app sigue con
+> manos Inspire DFQ**: hay que cambiarlo por el de BrainCo.
+>
+> **Lo que dicen las fuentes (investigado 2026-10-15):**
+> - Revo 2: de fábrica izquierda id 126 / derecha id 127, 460800 — coincide con lo medido.
+> - Registros (Modbus RTU): leer posiciones 2000-2005 (fc 04), velocidad 2006-2011, corriente
+>   2012-2017, estado del motor 2018-2023 (0 quieto, 1 andando, 2 trabado), botón 2025,
+>   lado 901 (1 der., 2 izq.). Escribir posición+velocidad 1022-1033 (6 pares). Modo 937: 0 =
+>   0..1000 normalizado (0 = abierta, 1000 = cerrada). Orden: pulgar flexión, pulgar rotación,
+>   índice, medio, anular, meñique. Corriente de protección 930-935 (100-1500 mA, de fábrica
+>   500). Hasta 500 Hz. El registro 0 no existe en el mapa (por eso leía 0).
+> - **No escribir** 903 (reset de fábrica), 900 (OTA), 1000 (id), 1001 (baud), 1009 (reinicio),
+>   ni 1068 = 0; ni los modos de corriente/PWM (empujan hasta trabarse).
+> - Unitree: `unitreerobotics/brainco_hand_service` (C++, PC2, SDK cerrado de BrainCo) publica
+>   `rt/brainco/{left,right}/state` y escucha `.../cmd` (`unitree_go` MotorCmds_/MotorStates_,
+>   6 valores 0..1) a 100 Hz. **Al arrancar abre las manos a toda velocidad.** Ojo: el
+>   `robot_hand_brainco.py` de xr_teleoperate parece cruzar los dos motores del pulgar
+>   (verificar moviendo uno solo).
+> - Modelo 3D: `unitree_ros/robots/g1_with_brainco_hand/` (BSD-3; 6 activas + mimic por mano:
+>   `{l,r}_thumb_metacarpal`, `thumb_proximal`, `{index,middle,ring,pinky}_proximal`).
+> - Fuentes: github.com/unitreerobotics/brainco_hand_service, brainco-hz.com/docs/revolimb-hand
+>   (revo2: modbus_foundation, parameters, faq), github.com/unitreerobotics/unitree_ros
+>   (robots/g1_with_brainco_hand), github.com/unitreerobotics/xr_teleoperate.
+>
+> Plan: leer las manos con Modbus directo desde PC2 (sin el SDK cerrado) en el puente, mostrar
+> los dedos en Joints, y después moverlas con velocidad y corriente bajas.
 
 > **Revisado 2026-10-15 en el robot y en las fuentes.** En el robot: en `192.168.123.0/24` solo
 > contestan PC1 (.161), PC2 (.164) y el lidar Mid-360 (.120); PC2 no tiene ningún
@@ -196,6 +239,14 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 > (README §3.2, issues #46 y #48, `teleop/robot_control/robot_hand_inspire.py`),
 > github.com/NaCl-1374/inspire_hand_ws (manual FTP).
 
+- [x] **2026-10-15, el usuario enchufó un adaptador** a PC2: FTDI **FT4232H** genérico (4 puertos,
+      `/dev/ttyUSB0-3`, en el hub interno `1-2.2`), el tipo de placa de las DFQ. Se le dio a
+      `unitree` el grupo `dialout` para probar sin sudo. **Ninguna respuesta**: escucha pasiva
+      1 s por puerto (silencio), y solo tramas de LECTURA (Inspire 0x11 posición, Modbus 0x03)
+      en los 4 puertos × 9 velocidades (9600 a 1 M) × ids 1-2, más ids 1-16 a 115200. Lo más
+      probable: los cables RS485 de las manos no llegan a ese adaptador, o A/B invertidos.
+      (Ojo: la primera prueba que se pasó tenía mal el checksum, 0x2A en vez de 0x32; la
+      segunda y estas ya lo tenían bien.)
 - [ ] **Mirar el robot**: ¿hay adaptadores USB-RS485 sueltos o cables de las muñecas sin
       enchufar (→ DFQ), o un conector Ethernet y yemas táctiles (→ FTP)? La etiqueta del modelo
       está en la mano.
@@ -247,9 +298,11 @@ Lo que quedó en `joint_ctl_core.hpp` (J2), con sus valores por defecto; cada un
 - Dead-man: sin mensajes 1 s → se congela donde está; 5 s → suelta. La página manda un latido
   cada 250 ms. Si stdin se cierra (el relay murió) → suelta.
 - Soltar también es una rampa (2 s); después un último mensaje con peso 0 y el proceso termina.
-- (J3) Freno por choque: una articulación con torque medido > 60 % del nominal del URDF (brazo
-  25 N·m → 15; muñeca pitch/yaw 5 → 3; cintura 88 → 53) durante 250 ms, estando a más de 0.05
-  rad de su comando, deja de empujar: comando y destino pasan a donde está.
+- (J3) Freno por choque: una articulación con torque medido > 30 % del nominal del URDF (brazo
+  25 N·m → 7.5; muñeca pitch/yaw 5 → 1.5; cintura 88 → 26) durante 150 ms, estando a más de 0.05
+  rad de su comando, deja de empujar: comando y destino pasan a donde está. (Era 60 % / 250 ms
+  hasta el 2026-10-15: con el brazo trabado a mano seguía empujando.)
+- Aceleración limitada a 2 rad/s² y 200 Hz (2026-10-15, por los tirones).
 - (J3) Cualquier motor sostenido a 75 °C o más → suelta (la alarma de telemetría es 80).
 - No caminando: al tomar, el relay manda `stop_move`; mientras está tomado rechaza `move` y las
   acciones de brazo; un `stop_move` desde cualquier lado suelta el brazo.
