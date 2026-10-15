@@ -224,6 +224,51 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 > Plan: leer las manos con Modbus directo desde PC2 (sin el SDK cerrado) en el puente, mostrar
 > los dedos en Joints, y después moverlas con velocidad y corriente bajas.
 
+- [x] **Leer las manos (2026-10-15, construido):** `robot-command-relay/src/brainco_modbus.hpp`
+      (C++ puro, solo arma pedidos de LECTURA fc 04; `flock` por transacción para compartir el
+      puerto con un futuro escritor; test en CI con las respuestas reales) y `g1_joint_bridge`
+      busca cada mano en `/dev/ttyUSB0-7` y la lee a 30 Hz en un hilo propio (si se pierde, la
+      vuelve a buscar cada 5 s). Leído a mano en el robot: registro 901 confirma izq. = 126,
+      der. = 127; en reposo pulgares ~400 y dedos ~50 (de 1000). Página: modelo 3D con manos
+      **BrainCo** (`unitree_ros/robots/g1_with_brainco_hand`, BSD-3, con la cintura bloqueada y
+      las puntas fijas), dedos dibujados como posición/1000 × límite del URDF, e inspector con
+      "Closed %", corriente y estado del motor. Falta: ver con el robot que cada dedo del dibujo
+      se mueva con su dedo real — **sobre todo los dos del pulgar**, que Unitree parece cruzar.
+- [x] **2026-10-15, con el robot:** el compañero movió los dedos a mano y el dibujo no cambió.
+      Medido: en 8 s la posición no se movió ni 1/1000 en ninguna mano (la corriente, solo
+      ruido). Lo más probable: los dedos de la Revo 2 van por tornillo y no se pueden mover a
+      mano — lo que se dobla es la parte pasiva, no el motor. La prueba buena es moverlos.
+- [x] **Mover los dedos (2026-10-15, construido):** en la misma sesión que los brazos ("Take
+      control"). `src/brainco_command.hpp` = la única escritura (registros 1022-1033, posición +
+      velocidad, constantes, no parámetros); el puente de lectura no lo incluye (un test lo
+      verifica). Regla 10 del núcleo: una mano se toma solo si contestó al tomar, sus destinos
+      arrancan donde están los dedos, se recortan a 0..1000, como mucho una escritura cada 50 ms
+      por mano, velocidad 300/1000 (`HAND_SPEED`, tope 600), y al soltar no se escribe más (los
+      dedos quedan donde están). Relay `{"op": "hand", side, finger, pos}`. Página: grupos
+      "Left hand"/"Right hand" con un deslizador por dedo en % cerrado, ± de a 10 %, y botones
+      Open / Close. Probado de punta a punta en esta PC con **dos manos falsas en
+      pseudoterminales** (`scratchpad/e2e/fake_hands.py`): cerrar la izquierda llegó al 100 %
+      en la lectura, el índice derecho al 29 %, y "volver al inicio" mandó los 27.
+      **Bug encontrado en J3 y arreglado:** "Everything back to where it started" solo mandaba la
+      ÚLTIMA articulación — la página y el backend guardaban un pendiente por tipo de operación;
+      ahora uno por articulación/dedo (test en el backend).
+      **Probado con el robot el mismo día: "funciona".** Dos pedidos, resueltos esa noche:
+      - "No se ve en el 3D que se mueven las manos": sí se movían (verificado), pero en la vista
+        entera la mano son ~60 píxeles, y la izquierda del robot está a la DERECHA de la
+        pantalla. Botones de vista: "Whole robot" / "Robot's left hand" / "Robot's right hand";
+        la cámara se acerca a la mano y la sigue si el brazo se mueve.
+      - "Give arms back" tiene que devolver también las manos: al soltar, cada mano vuelve a
+        donde estaba al tomar el control (regla 10, durante la rampa de los brazos; una mano no
+        tocada no recibe nada). Y un botón **Relax** por mano = la postura de encendido
+        (pulgares 40 %, dedos 5 %).
+      Falta: confirmar flexión vs. rotación del pulgar.
+- [x] **Página, 2026-10-15:** un aviso largo (p. ej. "… pushed against something…") ensanchaba
+      todo el panel y aparecía una barra horizontal: el panel es una grilla cuya columna crecía
+      hasta el texto más largo, y los avisos no partían línea. Ahora la columna es fija y los
+      avisos de Joints parten línea (`StatusText wrap`). Y en el visor, arriba a la izquierda,
+      **"Warm joints"**: cada articulación sobre la banda normal (≥ 55 °C) con su temperatura,
+      la más caliente primero, en el color en que se pinta; clic la selecciona.
+
 > **Revisado 2026-10-15 en el robot y en las fuentes.** En el robot: en `192.168.123.0/24` solo
 > contestan PC1 (.161), PC2 (.164) y el lidar Mid-360 (.120); PC2 no tiene ningún
 > `/dev/ttyUSB*` (por USB solo la RealSense y el Bluetooth); no corre ningún servicio de manos.
