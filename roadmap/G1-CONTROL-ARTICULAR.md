@@ -171,7 +171,15 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
       - empuje: a kp 60, el 60 % de 25 N·m recién se alcanza ~14° atrás del comando. Ahora
         **30 % y 150 ms** (~7°; `JOINT_CTL_STALL_FRAC`/`_MS`), y la página avisa "<joint> pushed
         against something: it stopped where it was".
-      Falta probar estos dos cambios con el robot.
+      Probado esa noche: **peor** — seguía temblando y cada sesión se soltaba sola a los 1-10 s
+      con "Released: the robot's mode could not be read" (`fsm_lost`). **Causa medida:** el
+      servicio del relay tenía `CPUQuota=25%` y en el G1 corre también el visor y el sender, que
+      leen `rt/lowstate` a ~1 kHz: 19 % de un núcleo solo con el visor, y con el sender a 200 Hz
+      el grupo estuvo **frenado por el kernel en 180 de 593 períodos (33.8 s)** — todo el grupo
+      congelado a ráfagas: temblor, y la lectura del FSM vencía. La misma trampa que ya tuvo el
+      video (`robot-splunk-docs/PLAN-VIDEO.md`). Arreglo: `CPUWeight=100` en vez de la cuota
+      (`systemd/robot-command-relay.g1.service`); hay que **reinstalar la unidad** en el G1.
+      Probablemente los tirones de antes también eran en parte esto.
 - [ ] Poses guardadas (nombre → ángulos). STOP siempre visible (hoy: Release y el stop del
       Drive).
 - **Para probar con el robot:** `git pull && ./build.sh && sudo systemctl restart
