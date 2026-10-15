@@ -56,8 +56,9 @@ three.js + urdf-loader  ──WebSocket──▶ AI-VL-backend  ──▶ (execu
 
 Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin eso.
 
-> **Estado 2026-10-14: J0 ✅, J1 y J2 construidos y probados sin robot.** Falta probar los dos
-> con el robot (abajo, "Para probar J1" y en J2). **Corrección del 2026-10-14: las manos son
+> **Estado 2026-10-15: J0 ✅, J2 ✅ (probado con el robot), J3 construido** (todos los brazos +
+> cintura, rango completo; falta probarlo con el robot), **J1 construido** — su diagnóstico de
+> las piernas colgado sigue pendiente. **Corrección del 2026-10-14: las manos son
 > Inspire de cinco dedos, no Dex3-1** (el usuario lo vio en el robot): el modelo 3D se rehízo
 > con manos Inspire, el puente dejó de leer `rt/dex3/*` y J4 cambia (abajo). Lo construido en
 > J0/J1:
@@ -109,7 +110,14 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 - **Hecho cuando:** se mueve un brazo a mano (robot amortiguado) y el dibujo lo sigue para el
   mismo lado en las 29 articulaciones, con menos de 200 ms de retraso. (Los dedos, en J4.)
 
-### J2 — Un codo, por `rt/arm_sdk` — construido 2026-10-14, falta probar con el robot
+### J2 — Un codo, por `rt/arm_sdk` — ✅ probado con el robot 2026-10-14
+
+> **Prueba con el robot (2026-10-14, a la noche; 02:42-02:44 en el reloj del robot):** cuatro
+> sesiones, los dos codos, el deslizador movido rápido (destinos de 0.38 a 1.58 rad en menos de
+> 1 s: el robot igual fue a 0.5 rad/s y todo quedó dentro de ±0.6 rad). Soltar anduvo siempre
+> (rampa de 2 s, el sender terminó solo), y en una sesión los stop del Drive (HTTP y UDP)
+> soltaron el brazo como corresponde. Motores después: **0 errores**, máximo 48 °C (muñeca
+> izquierda), codos 45/42 °C, torque de los codos −1.4 a −2.6 N·m. El usuario: "anda bien".
 - [x] `g1_joint_sender` + `joint_ctl_core.hpp` (las reglas, §4), a partir de
       `g1_arm7_sdk_dds_example.cpp` (leído, no parcheado). Habilitados: los dos codos
       (`JOINT_CTL_ALLOW`). Test del núcleo en CI (`tests/test_joint_ctl_core.py`, 34 chequeos).
@@ -141,19 +149,64 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 - **Hecho cuando:** el codo se mueve 20° y vuelve, con PC1 equilibrando, y al cerrar la sesión el
   brazo vuelve solo a la pose de PC1 sin tirón.
 
-### J3 — Los dos brazos y la cintura
-- [ ] Todas las articulaciones de §1 por `arm_sdk`, con límites del URDF.
-- [ ] Poses guardadas (nombre → ángulos), "volver a la pose inicial", y STOP siempre visible.
+### J3 — Los dos brazos y la cintura — construido 2026-10-15, falta probar con el robot
+- [x] Las 15 articulaciones de §1 por `arm_sdk` (7 + 7 del brazo + cintura yaw), con **todo el
+      rango del URDF** (menos 0.05 rad): el usuario pidió sacar el tope de ±34° de J2
+      (`JOINT_CTL_EXCURSION` sigue existiendo, ahora 0 = apagado). Como un brazo con todo el
+      rango puede chocar con el cuerpo, dos reglas nuevas en el núcleo (§4): **freno por
+      choque** (una articulación que empuja > 60 % de su torque nominal 250 ms sin llegar a su
+      destino se queda donde está) y **suelta a 75 °C**. Tests: 43 chequeos del núcleo; el relay
+      verifica que su lista de articulaciones coincida con la del núcleo.
+- [x] Página: un deslizador por articulación, agrupadas (cintura / brazo izq. / brazo der.),
+      con el destino y el valor medido; clic en el robot selecciona la fila. "Everything back to
+      where it started". El fantasma muestra solo lo que todavía no llegó (> 2°). Probado de
+      punta a punta en esta PC (hombro −50°, cintura +20°, soltar).
+- [ ] Poses guardadas (nombre → ángulos). STOP siempre visible (hoy: Release y el stop del
+      Drive).
+- **Para probar con el robot:** `git pull && ./build.sh && sudo systemctl restart
+  robot-command-relay` en PC2 (nada más: los valores nuevos son los de por defecto) y `run.sh`
+  acá. Primero movimientos chicos de cada articulación para confirmar el sentido; después uno
+  grande lejos del cuerpo. **No probar el freno por choque contra el propio cuerpo a propósito
+  la primera vez**: verlo con la mano de alguien frenando el antebrazo suavemente.
 - **Hecho cuando:** se arma una pose de brazos completa desde la página y se vuelve a la
   inicial, sin desequilibrio y sin temperaturas raras.
 
 ### J4 — Los dedos (manos Inspire, no Dex3)
-- [ ] **Identificar el modelo** con el robot prendido: `ping 192.168.123.210` desde PC2 → FTP
-      (Ethernet); un `/dev/ttyUSB*` de la mano → DFQ (RS485). El dibujo usa DFQ.
+
+> **Revisado 2026-10-15 en el robot y en las fuentes.** En el robot: en `192.168.123.0/24` solo
+> contestan PC1 (.161), PC2 (.164) y el lidar Mid-360 (.120); PC2 no tiene ningún
+> `/dev/ttyUSB*` (por USB solo la RealSense y el Bluetooth); no corre ningún servicio de manos.
+> Las manos tienen luz (están alimentadas) pero **nadie les habla**, por eso tampoco la app de
+> Unitree las mueve. En las fuentes (investigado con agente, ver links abajo) **el firmware no
+> maneja manos Inspire**: siempre es un programa en PC2 que hay que correr uno:
+>
+> - **DFX/DFQ (RS485, sin sensores táctiles):** un adaptador USB-RS485 por mano, enchufado a
+>   PC2 (`/dev/ttyUSB1`/`2` en el código). Servicio `unitreerobotics/DFX_inspire_service`
+>   (`sudo ./inspire_g1`); DDS `rt/inspire/cmd` y `rt/inspire/state` (`unitree_go`
+>   MotorCmds_/MotorStates_, 12 valores 0..1 con 1 = abierta: 0-5 derecha, 6-11 izquierda, cada
+>   una meñique, anular, medio, índice, flexión del pulgar, rotación del pulgar).
+> - **FTP (táctil, Ethernet, Modbus TCP puerto 6000):** IP de fábrica **192.168.11.210** (las
+>   dos manos igual); Unitree las configura en 123.210 (izq.) / 123.211 (der.). Servicio
+>   `inspire_hand_ws`; DDS `rt/inspire_hand/ctrl|state|touch/{l,r}`.
+> - `rt/dex3/*` lo publica un servicio residente del robot para la Dex3-1; `rt/hand_sdk` son 4
+>   motores de mano dentro de `ai_sport`. Ninguno es la Inspire.
+> - La luz de la mano solo dice que tiene 24 V, no que se comunique.
+>
+> Fuentes: github.com/unitreerobotics/DFX_inspire_service, github.com/unitreerobotics/xr_teleoperate
+> (README §3.2, issues #46 y #48, `teleop/robot_control/robot_hand_inspire.py`),
+> github.com/NaCl-1374/inspire_hand_ws (manual FTP).
+
+- [ ] **Mirar el robot**: ¿hay adaptadores USB-RS485 sueltos o cables de las muñecas sin
+      enchufar (→ DFQ), o un conector Ethernet y yemas táctiles (→ FTP)? La etiqueta del modelo
+      está en la mano.
+- [ ] Si es FTP: buscarla en su IP de fábrica 192.168.11.210 (una mano por vez: las dos tienen
+      la misma). Ojo, agregarle una IP a `eth0` de PC2 puede cambiar la interfaz que usa DDS.
+- [ ] Primera prueba **solo leyendo** (DFQ: la trama de lectura de posición a 115200; FTP: leer
+      registros por Modbus). **No** correr `inspire_g1` ni `ModbusDataHandler` como prueba:
+      empiezan a mandar comandos.
 - [ ] Instalar y correr en PC2 el servicio de esa mano (el de Unitree para Inspire), primero
       solo leyendo: que el puente publique sus 6 + 6 valores y el dibujo los siga.
 - [ ] Mover con fuerza baja. Atajos: abrir, cerrar, pinza. Dedo por dedo con el mismo fantasma.
-- [ ] Ver qué publica `rt/dex3/*/state` en este robot (la otra mano): por curiosidad, no se usa.
 - **Hecho cuando:** cada dedo se mueve desde la página y la mano agarra y suelta un objeto
   blando.
 
@@ -185,15 +238,19 @@ Lo que quedó en `joint_ctl_core.hpp` (J2), con sus valores por defecto; cada un
   (< 100 ms). Si el FSM cambia (amortiguado, caída, el control remoto), o no se puede leer por
   2 s, o el estado se pierde por 0.5 s: suelta.
 - Al tomar, el destino de cada articulación es donde ESTÁ; el peso sube de 0 a 1 en 2 s.
-- Solo aceptan destino las de `JOINT_CTL_ALLOW` (los codos); las otras 15 se sostienen quietas.
-  La cintura roll/pitch nunca (no tienen motor).
-- Destino recortado al rango del URDF menos 0.05 rad **y** a 0.6 rad (~34°) de donde estaba al
-  tomar (`JOINT_CTL_EXCURSION`, tope 1.0 en el binario).
+- Solo aceptan destino las de `JOINT_CTL_ALLOW` (J2: los codos; desde J3 todas las de brazo y
+  la cintura yaw); las demás se sostienen quietas. La cintura roll/pitch nunca (no tienen motor).
+- Destino recortado al rango del URDF menos 0.05 rad; en J2 también a 0.6 rad (~34°) de donde
+  estaba al tomar, desde J3 apagado por defecto (`JOINT_CTL_EXCURSION=0`).
 - Velocidad 0.5 rad/s (`JOINT_CTL_MAX_VEL`, tope 1.0): el sender interpola, el navegador solo
   manda destinos. kp 60 / kd 1.5, como el ejemplo de Unitree.
 - Dead-man: sin mensajes 1 s → se congela donde está; 5 s → suelta. La página manda un latido
   cada 250 ms. Si stdin se cierra (el relay murió) → suelta.
 - Soltar también es una rampa (2 s); después un último mensaje con peso 0 y el proceso termina.
+- (J3) Freno por choque: una articulación con torque medido > 60 % del nominal del URDF (brazo
+  25 N·m → 15; muñeca pitch/yaw 5 → 3; cintura 88 → 53) durante 250 ms, estando a más de 0.05
+  rad de su comando, deja de empujar: comando y destino pasan a donde está.
+- (J3) Cualquier motor sostenido a 75 °C o más → suelta (la alarma de telemetría es 80).
 - No caminando: al tomar, el relay manda `stop_move`; mientras está tomado rechaza `move` y las
   acciones de brazo; un `stop_move` desde cualquier lado suelta el brazo.
 - Modo colgado solo con confirmación explícita en la página ("el robot está colgado") y nunca
