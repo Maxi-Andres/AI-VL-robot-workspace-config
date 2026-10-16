@@ -212,7 +212,32 @@ libreta de ideas; lo que se decide hacer sube acá.
       con referencias. Es lo mismo que *"poner una base de datos para que la ia tenga más
       contexto"* de `FIX.txt`.
 - [ ] Micrófono y parlantes del robot — **plan del Go2 en `roadmap/GO2-AUDIO.md` (§5.8), 2026-10-14**.
-- [ ] Mejorar el TTS.
+- [x] **Que la IA conteste rápido** — hecho 2026-10-16: 6.8 s → 0.6 s hasta la primera palabra.
+      Ollama corría el encoder de visión en la CPU; ahora `run.sh` levanta un llama-server
+      propio con la app. Medición y tabla en `BITACORA.md` §10 (2026-10-16). Modelo: Qwen3-VL 4B
+      Q4 con 1024 tokens por foto, contra 7 candidatos más. Pendiente: `run.ps1` (Windows) no lo
+      tiene. Whisper ya va en la GPU (2026-10-16): `small` int8, 0.16 s y 2.6 %
+      de error contra 0.47 s y 8.0 % del `base` en CPU (30 voces argentinas, `BITACORA.md` §10).
+- [x] **La voz leía "asterisco asterisco"** — arreglado 2026-10-16: el VLM contesta en markdown y
+      las tres voces leían los símbolos. `AI-VL-frontend/src/lib/speakable.ts` limpia cada frase
+      antes de hablar (pedirle texto plano al modelo empeoró la lectura: leyó "Fluke" donde dice
+      Chauvin Arnoux, 3 de 3). En pantalla el texto sigue con su formato.
+- [x] **Pausa larga después de cada punto con Kokoro (em_santa)** — arreglado 2026-10-16: no era la
+      voz (su audio trae ~0.1 s de silencio) sino la cola, que pedía la frase siguiente recién
+      cuando terminaba la actual: síntesis de Kokoro ~0.4 s + ida y vuelta. Ahora la siguiente se
+      sintetiza mientras suena la actual (`speechQueue.ts`, con tests).
+- [x] **Selector de voces y voz de Drive** — 2026-10-16: el selector mostraba decenas de voces
+      "system" del navegador; ahora solo las del servidor (Piper y Kokoro), y las del navegador
+      solo si el servidor no tiene ninguna. La voz elegida es una para toda la app
+      (`AI-VL-frontend/src/lib/voiceChoice.ts`): el parlante del robot en Drive no mandaba voz y
+      hablaba siempre con la default del servidor (Daniela).
+- [ ] El VLM se niega a adivinar nacionalidad por la cara (entrenamiento de Qwen, no nuestro prompt).
+      Probado 2026-10-16: una instrucción "sin sermones" no lo cambia y rompe la lectura de marcas;
+      queda el prompt original. Solo estima con pistas visibles (bandera, camiseta, carteles).
+- [ ] Mejorar el TTS — **medido 2026-10-16**: la voz de hoy (Piper `es_AR-daniela-high`) es la
+      que peor se entiende (34 % de error al re-transcribirla, el resto 6-9 %; dijo "420" por
+      "trescientos veinte"). Muestras de 12 voces para elegir de oído en
+      https://claude.ai/artifact/WQdyGJR4CcvioadcyCz8za. Falta que el usuario elija.
 - [ ] Examples en español en `command_common.py` (hoy el matching de skill falla seguido).
 - [ ] Batería expuesta; resolución y fps del video configurables.
 - [ ] Reestructurar la vista de VLM (no se entiende).

@@ -68,6 +68,60 @@ renombre los tocó a todos. No sirven para saber qué está fresco.
 ---
 ## 10. Observaciones de campo
 
+### 2026-10-16 — "la IA tarda 10 s por respuesta": Ollama mira la foto con la CPU
+
+**Síntoma:** cada pregunta por voz tardaba ~10 s; la gente corre IAs locales que contestan al
+toque.
+
+**Medido:** el texto nunca fue el problema (prefill 4668 tok/s, generación ~118 tok/s). Ollama
+0.30.6 arranca su llama-server con `--no-mmproj-offload --image-min-tokens 1024` y su log dice
+`CLIP using CPU backend`: el **codificador de visión corre en la CPU**, cualquiera sea el
+modelo o la VRAM libre. Una foto de 768 px (lo que manda el navegador) = **6.8 s hasta la
+primera palabra**, con la GPU al 1-2 %. Encima: modelo descargado a los 5 min de inactividad
+(~3 s de recarga), Whisper frío 3.3 s, Piper frío 1.2 s.
+
+**Arreglo:** la app ya no le pide el VLM a Ollama. `linux/run.sh` arranca un llama-server
+propio (`linux/vlm-server.sh`, el binario que trae Ollama, encoder en la GPU) en `:8081`,
+vive lo mismo que la app y libera la VRAM al cerrarla; si no levanta, cae a Ollama.
+`vlm_common` traduce los payloads (detección, stream libre, intérprete de comandos), e
+iacore precalienta Whisper, Piper y el VLM al arrancar (3.3 s en segundo plano). Resultado con
+el mismo Qwen3-VL 4B Q4 (`src/vlm_server_benchmark.py`, cuadro distinto en cada pedido):
+
+| | primera palabra | respuesta | hechos | comandos | VRAM |
+|---|---:|---:|---:|---:|---:|
+| Ollama | 6.81 s | 7.34 s | 8/8 | 8/8 | 3.2 GB |
+| llama-server, piso del modelo (~430 tokens/foto) | 0.18 s | 0.79 s | 7/8 | 8/8 | 4.4 GB |
+| **llama-server, `--image-min-tokens 1024`** | **0.60 s** | **1.22 s** | **8/8** | **8/8** | 4.5 GB |
+
+Con menos tokens por foto lee mal la letra chica (la marca de una placa), así que queda 1024
+como en Ollama. **Los otros 7 candidatos no le ganan** (tabla en `AI-VL-core/README.md`): el 4B Q8
+acierta igual pero ocupa 6.2 GB; los 8B (Qwen3-VL, MiniCPM-V 4.5) no entran o van a 16 tok/s;
+InternVL3 8B entra pero lee peor; Gemma 3 y SmolVLM2 fallan comandos. Queda **Qwen3-VL 4B Q4**.
+**Trampa del benchmark:** los dos servidores cachean el embedding de la imagen;
+repetir la misma foto dio 0.3 s sin trabajo de visión. Hay que cambiar un píxel por pedido.
+
+**Voz, el mismo día.** STT medido con 30 frases de 30 argentinos (OpenSLR 61):
+
+| | dónde | error | sin tildes | por frase | VRAM |
+|---|---|---:|---:|---:|---:|
+| Whisper base (antes) | CPU | 8.0 % | 6.6 % | 0.47 s | 0 |
+| Parakeet TDT 0.6B v3 | CPU | 4.4 % | 2.6 % | 0.21 s | 0 |
+| **Whisper small int8 (ahora)** | GPU | **2.6 %** | **1.1 %** | **0.16 s** | 482 MB |
+| Whisper large-v3-turbo int8 | GPU | 2.6 % | 1.1 % | 0.25 s | 1.3 GB |
+| Whisper large-v3-turbo | GPU | 2.2 % | 1.1 % | 0.27 s | 2.2 GB |
+
+ctranslate2 4.8 pide el cuBLAS de CUDA 12 y el venv trae el 13 (por torch): `asr_common` carga el
+`libcublas.so.12` de `/usr/local/lib/ollama/cuda_v12` antes, y si la GPU falla vuelve sola a la CPU
+(la falta de cuBLAS recién salta en la primera transcripción, así que lo prueba con medio
+segundo de silencio). `run.sh` usa `small`/`cuda`/`int8_float16`.
+
+**TTS:** la voz de la app (Piper `es_AR-daniela-high`) es la que **peor se entiende**: re-transcripta
+con Whisper da 34 % de error contra 6-9 % de las otras 11 (dice "tesonas", "detenda", y una vez
+"420" por "trescientos veinte"); bajarle la velocidad no lo arregla. Piper 0.1-0.4 s por frase,
+Kokoro 0.55-0.65 s, Pocket TTS (Kyutai) 0.32 s en GPU / 1.27 s en CPU, Qwen3-TTS 0.6B **4 s** y
+2.3 GB (no genera de a pedazos), Chatterbox no entra (3.5-4 GB). Muestras para elegir de oído:
+https://claude.ai/artifact/WQdyGJR4CcvioadcyCz8za.
+
 ### 2026-09-29 — "H.264 me saca": el encoder segfaulteó y quedó girando, no murió
 
 **Síntoma:** en la app, elegir H.264 volvía solo a MJPEG; H.264 intra sí andaba. Frigate
@@ -297,6 +351,10 @@ medido en el doc de datos correspondiente.
 | Descartado | Motivo |
 |---|---|
 | Pasar los tópicos DDS de un lado a otro de la red | 122 tópicos desde su subred, **2** desde otra, 3 con peers unicast. `RED-Y-DDS.md` |
+| **Acelerar el VLM dentro de Ollama** (modelo más chico, importar el GGUF oficial con `ollama create`) | Ollama 0.30.6 pone el encoder de visión en la CPU siempre: `qwen3-vl:2b` tarda lo mismo (6.4 s) y el GGUF importado también. La salida es un llama-server propio (2026-10-16, §10) |
+| **Parakeet TDT 0.6B v3 como STT** | Medido 2026-10-16: en CPU es rápido (0.21 s) y no usa VRAM, pero erra el doble que Whisper `small` en GPU (4.4 % vs 2.6 %). Queda como plan B si falta VRAM |
+| **Qwen3-TTS y Chatterbox en esta PC** | Qwen3-TTS 0.6B tarda 4 s por frase y ocupa 2.3 GB; Chatterbox pide 3.5-4 GB. Con el VLM (4.5 GB) no hay lugar. Para el servidor de GPU, sí |
+| **Gemma 3 4B como VLM de la app** | Benchmark 2026-10-16: interpretó **"pará" como `walk`**, contesta en inglés a preguntas en español y la detección le salió vacía |
 | Túnel L2 para traer la red del robot | Imposible con dos robots: los dos son `.161` |
 | VM collector con presencia L2 / VLAN por robot / trunk itinerante | Incompatible con que el robot esté en cualquier red |
 | Agente que se suscribe a **todos** los tópicos | Rompe el presupuesto por 20-1700× y manda el video a Splunk |

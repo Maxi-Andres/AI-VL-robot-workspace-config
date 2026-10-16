@@ -112,6 +112,30 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 
 - [ ] GPU de inferencia (§3.2), o arrancar alquilando. Sin ella no se prueba ni el modelo ya
       entrenado (1A) ni la simulación (1B).
+
+  > **Opciones de compra (investigado 2026-10-16, precios de oct. 2026 en EE. UU., en suba;
+  > también en la presentación, diapositiva 6).** NVIDIA pide 16 GB para correr N1.7 y 40 GB
+  > para entrenarlo (receta normal ~35 GB; visión y lenguaje, 80 GB). Velocidad oficial con
+  > TensorRT, mínimo recomendado 10 Hz:
+  >
+  > | Opción | Memoria | Corre | Entrena | Precio aprox. |
+  > |---|---|---|---|---|
+  > | **Alquilar H100** (Lambda, RunPod, Vast) | 80 GB | ~36 Hz | todo | USD 2.6-4.2/h; un ajuste de 10K pasos ≈ USD 10-17 (estimación de la comunidad: 3-4 h) |
+  > | DGX Spark (GB10) | 128 GB unificada | 10.1 Hz | entra, pero lento | ~USD 4.700 |
+  > | RTX 5090 | 32 GB | ~32 Hz | solo ajustes chicos (la receta normal no entra) | ~USD 5.000, escasa |
+  > | RTX 4090 usada | 24 GB | ~23 Hz | LoRA (N1.5) | ~USD 2.500-3.000 |
+  > | RTX 6000 Ada / L40S | 48 GB | 26 Hz (L40) | receta normal | ~USD 7.000-8.500 |
+  > | **RTX PRO 6000 Blackwell** | 96 GB | ~36 Hz | todo | ~USD 16.000 (era 8.565 al lanzarse) |
+  > | **Jetson AGX Thor** (en el robot) | 128 GB | 10.7-12.4 Hz | no | ~USD 5.500 (subió de 3.499 en julio) |
+  > | Orin NX 16 GB (la de PC2) | 16 GB | ~2-3 Hz **estimado**, sin pruebas publicadas | no | ya está: sirve para ACT |
+  >
+  > Recomendación: alquilar para entrenar y usar ACT con lo que ya hay; comprar recién si la
+  > puerta 1C lo justifica (PRO 6000 para entrenar seguido, Thor para llevarlo en el robot).
+  > Argentina: courier hasta USD 3.000 por envío; lo caro va por importación formal con
+  > despachante (fuentes secundarias). Fuentes: github.com/NVIDIA/Isaac-GR00T (README y
+  > `getting_started/hardware_recommendation.md`), nvidia-isaac-gr00t.mintlify.app/deployment/tensorrt,
+  > tomshardware (PRO 6000, DGX Station), videocardz y cnx-software (precio de Thor),
+  > huggingface cloudwalk-research/GR00T-N1.6-G1-PnPAppleToPlate (horas de ajuste).
 - [ ] Opcional pero recomendado a mediano plazo: **dos cámaras de muñeca USB**. Todos los
       datasets G1 serios las tienen; para agarrar, la cámara de cabeza sola pierde el objeto
       detrás de la mano.
@@ -300,8 +324,9 @@ atribución y la leyenda "Built on NVIDIA Cosmos". Datasets de NVIDIA de G1: CC-
 2. **Casco** — **postergado 2026-10-13**: solo si la puerta 1C lo pide. Si llega: Quest 3 (lo
    más barato, ~USD 500, sirve para A), PICO 4 Ultra Enterprise (sirve para A y deja abierto B),
    Vision Pro.
-3. **GPU** — indispensable (confirmado por el usuario 2026-10-13): comprar servidor 24-32 GB,
-   Jetson AGX Thor, o alquilar al principio. Bloquea 1A, 1B y el paso 5 (no el 0 ni el 4).
+3. **GPU** — indispensable (confirmado por el usuario 2026-10-13). Opciones con precios en el
+   paso 1 (2026-10-16); recomendado empezar alquilando. Bloquea 1A, 1B y el paso 5. El paso 0
+   está hecho (pestaña Joints, 2026-10-13/16).
 4. **Cámaras de muñeca**: sí/no/después.
 5. **Primera tarea**: cuál, con qué objetos.
 

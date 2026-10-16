@@ -300,17 +300,19 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
       probable: los cables RS485 de las manos no llegan a ese adaptador, o A/B invertidos.
       (Ojo: la primera prueba que se pasó tenía mal el checksum, 0x2A en vez de 0x32; la
       segunda y estas ya lo tenían bien.)
-- [ ] **Mirar el robot**: ¿hay adaptadores USB-RS485 sueltos o cables de las muñecas sin
+> Lo de abajo eran los pasos para manos Inspire: **descartado** el 2026-10-15 (son BrainCo,
+> ver arriba). Queda como historia.
+- ~~[ ]~~ **Mirar el robot**: ¿hay adaptadores USB-RS485 sueltos o cables de las muñecas sin
       enchufar (→ DFQ), o un conector Ethernet y yemas táctiles (→ FTP)? La etiqueta del modelo
       está en la mano.
-- [ ] Si es FTP: buscarla en su IP de fábrica 192.168.11.210 (una mano por vez: las dos tienen
+- ~~[ ]~~ Si es FTP: buscarla en su IP de fábrica 192.168.11.210 (una mano por vez: las dos tienen
       la misma). Ojo, agregarle una IP a `eth0` de PC2 puede cambiar la interfaz que usa DDS.
-- [ ] Primera prueba **solo leyendo** (DFQ: la trama de lectura de posición a 115200; FTP: leer
+- ~~[ ]~~ Primera prueba **solo leyendo** (DFQ: la trama de lectura de posición a 115200; FTP: leer
       registros por Modbus). **No** correr `inspire_g1` ni `ModbusDataHandler` como prueba:
       empiezan a mandar comandos.
-- [ ] Instalar y correr en PC2 el servicio de esa mano (el de Unitree para Inspire), primero
+- ~~[ ]~~ Instalar y correr en PC2 el servicio de esa mano (el de Unitree para Inspire), primero
       solo leyendo: que el puente publique sus 6 + 6 valores y el dibujo los siga.
-- [ ] Mover con fuerza baja. Atajos: abrir, cerrar, pinza. Dedo por dedo con el mismo fantasma.
+- ~~[ ]~~ Mover con fuerza baja. Atajos: abrir, cerrar, pinza. Dedo por dedo con el mismo fantasma.
 - **Hecho cuando:** cada dedo se mueve desde la página y la mano agarra y suelta un objeto
   blando.
 
@@ -372,5 +374,7 @@ Lo que quedó en `joint_ctl_core.hpp` (J2), con sus valores por defecto; cada un
 - ~~Por dónde van los destinos~~: HTTP por el executor, socket propio en el backend (2026-10-14).
 - Qué FSM habilitan el control (`JOINT_CTL_FSM_OK`, hoy 500 y 501): ¿hace falta 801 (Run)?
 - Modelo de mano Inspire (DFQ o FTP): a confirmar con el robot (J4).
-- Licencia de las mallas en `AI-VL-frontend/public/g1/` (a confirmar antes de commitear).
+- ~~Licencia de las mallas en `AI-VL-frontend/public/g1/`~~: desde el 2026-10-15 salen de
+  `unitreerobotics/unitree_ros` (`robots/g1_with_brainco_hand`), cuyo LICENSE es **BSD-3**
+  (leído en el clon ese día).
 - Grúa o arnés para J5: ¿hay uno, o hay que conseguirlo?
