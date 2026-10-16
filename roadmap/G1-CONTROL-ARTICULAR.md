@@ -171,6 +171,17 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
       - empuje: a kp 60, el 60 % de 25 N·m recién se alcanza ~14° atrás del comando. Ahora
         **30 % y 150 ms** (~7°; `JOINT_CTL_STALL_FRAC`/`_MS`), y la página avisa "<joint> pushed
         against something: it stopped where it was".
+      - **2026-10-16: ese 30 % frenaba el brazo con solo levantarlo.** Sostener su propio peso ya
+        cuesta eso: con el brazo izquierdo adelante y el codo doblado, el hombro mide ~8.5 N·m de
+        gravedad (> 7.5) y queda unos grados abajo del comando, así que se cumplían las dos
+        condiciones. Medido en el robot: hombro izq. −6.7 N·m con el brazo quieto a −0.70 rad.
+        Arreglo: la regla 8 compara el torque **que sobra después de la gravedad**
+        (`src/arm_gravity.hpp`, modelo del URDF con manos BrainCo generado por
+        `tools/gen_g1_arm_model.py`; coincide con lo medido: −5.5 vs −6.7 hombro, −2.35 vs −3.0
+        codo, brazo derecho ±0.2). Test que falla con el freno viejo. **Falta probarlo con el
+        robot** (deploy por `git pull` + `./build.sh` en PC2).
+      - Siguiente paso posible: mandar ese torque de gravedad como *feedforward* (`motor_cmd.tau`)
+        para que el brazo no quede ~10° abajo del destino cuando está horizontal.
       Probado esa noche: **peor** — seguía temblando y cada sesión se soltaba sola a los 1-10 s
       con "Released: the robot's mode could not be read" (`fsm_lost`). **Causa medida:** el
       servicio del relay tenía `CPUQuota=25%` y en el G1 corre también el visor y el sender, que
