@@ -245,6 +245,23 @@ libreta de ideas; lo que se decide hacer sube acá.
       2.165): el punto decimal de ese display es el límite del modelo, no de la identidad. Los
       datos (amigo, hermano, altura, trabajo, creador) ahora los elige iacore por palabra clave
       — el modelo los recitaba todos y ninguna redacción lo frenó.
+- [x] **Bender tranquilo, la hora y respuestas cortas** — 2026-10-19 (iacore 7e6301b, frontend
+      f28c955). Solo el nombre "Bender" ya le contagiaba el personaje de Futurama ("¡Ay, qué
+      miedo!"); la identidad ahora dice "a calm and helpful robot, not the cartoon character" y
+      sacó "Unitree G1" (con el modelo en la identidad: 2/6 en 17.84 y perdía el nombre); el
+      modelo pasa a ser un dato por palabra clave. Medido: 17.84 kW 6/6, y a "estás en el medio"
+      contesta "No, no estoy impidiendo el paso. Estoy aquí para ayudarte". La hora es un dato
+      con `{now}` (hora local de la PC). La brevedad NO va en el prompt (una frase "sé breve" dio
+      0/6 en 17.84): al hablar se dicen como máximo 3 frases y la pantalla muestra todo. Los
+      "..." ya no cortan frases: se dicen como una pausa.
+- [ ] **Bender útil — decisiones del usuario (2026-10-19):**
+      - Moverse por voz: "estás en el medio" debería ir al intérprete de comandos y al executor
+        (correrse), con Safe mode y skills permitidas. Hoy el oído solo contesta.
+      - Buscar en internet: factible. SearXNG local (sin clave) o Brave/Tavily (con clave);
+        iacore decide por palabra clave si buscar y le pasa los fragmentos al VLM.
+      - Base de datos: factible; falta definir CUÁL — telemetría del robot (Splunk/relay),
+        documentos propios con RAG y embeddings locales, o memoria de personas/conversaciones
+        en SQLite.
 - [ ] El VLM se niega a adivinar nacionalidad por la cara (entrenamiento de Qwen, no nuestro prompt).
       Probado 2026-10-16: una instrucción "sin sermones" no lo cambia y rompe la lectura de marcas;
       queda el prompt original. Solo estima con pistas visibles (bandera, camiseta, carteles).
