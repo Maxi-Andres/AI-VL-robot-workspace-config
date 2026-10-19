@@ -231,6 +231,15 @@ libreta de ideas; lo que se decide hacer sube acá.
       solo si el servidor no tiene ninguna. La voz elegida es una para toda la app
       (`AI-VL-frontend/src/lib/voiceChoice.ts`): el parlante del robot en Drive no mandaba voz y
       hablaba siempre con la default del servidor (Daniela).
+- [x] **Identidad del asistente** — 2026-10-19: toda pregunta libre lleva "You are Bender, a Unitree G1
+      humanoid robot made by Maxi. The image is what your own camera sees in front of you."
+      (`config.json` `assistant_persona`, por robot), agregada al final de la instrucción, nunca
+      mezclada. Pasó de "parece que te están viendo" a "Sí, estoy viendo tu mano" y de "Soy Qwen" a
+      "Soy Bender… fabricado por Maxi", sin romper 17.84 kW ni Chauvin Arnoux.
+- [ ] **Medir bien la identidad (pedido 2026-10-19):** troubleshooting con más fotos reales del G1 y
+      más variantes. Lo visto: una versión larga leyó 17.84 como 1784; "speak of yourself as I"
+      rompió todo; la elegida a veces dice "Tengo un spray" en vez de "Tenés". Correr el set de
+      `vlm_server_benchmark.py` (hechos + comandos) con cada variante antes de cambiarla.
 - [ ] El VLM se niega a adivinar nacionalidad por la cara (entrenamiento de Qwen, no nuestro prompt).
       Probado 2026-10-16: una instrucción "sin sermones" no lo cambia y rompe la lectura de marcas;
       queda el prompt original. Solo estima con pistas visibles (bandera, camiseta, carteles).
