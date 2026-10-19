@@ -240,6 +240,11 @@ libreta de ideas; lo que se decide hacer sube acá.
       más variantes. Lo visto: una versión larga leyó 17.84 como 1784; "speak of yourself as I"
       rompió todo; la elegida a veces dice "Tengo un spray" en vez de "Tenés". Correr el set de
       `vlm_server_benchmark.py` (hechos + comandos) con cada variante antes de cambiarla.
+      Medido después (6 intentos, display del C.A 8220): **17.84 kW** sin identidad 6/6, con la
+      identidad corta 3-5/6 a 1152 px pero 6/6 a 1500 px; **21.65 kVA 0/6 en TODAS** (lee 2165 o
+      2.165): el punto decimal de ese display es el límite del modelo, no de la identidad. Los
+      datos (amigo, hermano, altura, trabajo, creador) ahora los elige iacore por palabra clave
+      — el modelo los recitaba todos y ninguna redacción lo frenó.
 - [ ] El VLM se niega a adivinar nacionalidad por la cara (entrenamiento de Qwen, no nuestro prompt).
       Probado 2026-10-16: una instrucción "sin sermones" no lo cambia y rompe la lectura de marcas;
       queda el prompt original. Solo estima con pistas visibles (bandera, camiseta, carteles).
