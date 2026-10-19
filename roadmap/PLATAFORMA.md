@@ -254,14 +254,62 @@ libreta de ideas; lo que se decide hacer sube acá.
       con `{now}` (hora local de la PC). La brevedad NO va en el prompt (una frase "sé breve" dio
       0/6 en 17.84): al hablar se dicen como máximo 3 frases y la pantalla muestra todo. Los
       "..." ya no cortan frases: se dicen como una pausa.
-- [ ] **Bender útil — decisiones del usuario (2026-10-19):**
-      - Moverse por voz: "estás en el medio" debería ir al intérprete de comandos y al executor
-        (correrse), con Safe mode y skills permitidas. Hoy el oído solo contesta.
-      - Buscar en internet: factible. SearXNG local (sin clave) o Brave/Tavily (con clave);
-        iacore decide por palabra clave si buscar y le pasa los fragmentos al VLM.
-      - Base de datos: factible; falta definir CUÁL — telemetría del robot (Splunk/relay),
-        documentos propios con RAG y embeddings locales, o memoria de personas/conversaciones
-        en SQLite.
+- [ ] **Bender útil — plan para implementar (pedido 2026-10-19: "todo eso").** Todo en iacore, que
+      ya arma la pregunta (`free_prompt_system`); el front y el backend no cambian salvo donde se
+      dice. Cada pieza entra como un DATO más por palabra clave, igual que la hora: nada se le
+      agrega al prompt si la pregunta no lo pide (lo medido: cada frase de más rompe lecturas).
+      Antes y después de cada pieza, correr `src/vlm_reading_check.py` (ver abajo) — si baja,
+      no entra.
+      1. **Buscar en internet.** SearXNG local en docker (sin clave, sin cuota; Brave o Tavily
+         solo si SearXNG no alcanza). `search_common.py`: se busca solo con "buscá",
+         "averiguá", "en internet", noticias, clima, precios, "quién es/qué es" + algo que no
+         está en la imagen; 3-5 fragmentos con fecha y fuente van como dato; la respuesta dice
+         de dónde salió. Medir: segundos que agrega (se espera 1-2 s) y acierto con/sin.
+      2. **Base de datos — los tres tipos:**
+         - a. **Datos del robot**: batería, temperaturas, estado, fallas. En vivo del relay
+           (`/health` y el estado que ya lee el executor), no de una base; el historial ("¿cuántas
+           veces se cayó hoy?") por la API REST de Splunk, con la cuota de 500 MB/día en mente.
+         - b. **Documentos propios (RAG)**: manuales y fichas de equipos en PDF → trozos →
+           embeddings locales en CPU (multilingual-e5-small o bge-m3) → `sqlite-vec`. Se cruza con
+           la lectura: "¿está bien que marque 250?" contra el rango de la ficha.
+         - c. **Memoria de personas y charlas**: SQLite (personas, notas, lo que se le pidió
+           recordar, registro de charlas). "Bender, acordate que…" guarda; "¿qué te dije
+           ayer?" busca.
+      3. **Reconocer personas ("ver a alguien y decir quién es").** Detector YuNet + SFace de
+         OpenCV (Apache 2.0, CPU, liviano) — NO los modelos de InsightFace (licencia solo
+         investigación). Alta desde la app o por voz: "Bender, este es Mateo" guarda el
+         embedding de la cara en la base de 2c; al preguntar "¿quién soy?" o "¿quién está
+         ahí?" el nombre entra como dato. Local siempre, con consentimiento y botón para
+         borrar a alguien. Medir con fotos reales del G1: aciertos, falsos positivos, umbral.
+      4. **Que lo que dice lo mueva — DESPUÉS (usuario 2026-10-19: "por ahora no").** Ya existe el
+         intérprete (`command_common.interpret`, la pestaña Robot command); falta que un
+         "command" del oído vaya ahí además de al VLM, con Safe mode y la lista de skills
+         permitidas; "estás en el medio" → correrse.
+- [ ] **Prueba de lectura del VLM** — `AI-VL-core/src/vlm_reading_check.py` (2026-10-19): 57
+      preguntas con respuesta conocida sobre las 33 fotos de `fotos/` (las 9 de equipos y 3
+      escenas de Descargas ahora están ahí: `clean/23-31`, `scenes/`), por la misma función que
+      usa la voz, con la identidad de Bender, 3 intentos con cuadro fresco, 1152 px.
+      **Primera corrida: 159/171 (93 %), 53 de 57 siempre bien — idéntico SIN identidad**, así
+      que Bender no le cuesta nada a la lectura. Las 4 que nunca acierta (límite del modelo):
+      la aguja del manómetro Beyca (dice ~250, está en 0), **21.65 kVA** (lee 2165), los
+      prensaestopas de `clean/25` (dice 16, son 4) y la marca chica "Spectra" (lee "EPCIA").
+      Lee bien: Fluke 438 y 87V, C.A 8220 (17.84 / 12.26), Hanna 9033, Hach 2100Q, HM PH-200,
+      Smart Sensor AR8100, PCE-VM 20, ABB, Contatec, Micro-Epsilon, Steck, Soldexel, De Wit,
+      JMP, el 650.0 °C y la emisividad 0.95. Correrla antes de tocar prompt, identidad, modelo o
+      tamaño de imagen; resultados en `docs/MODEL_BENCHMARKS.md` §4.
+- [ ] **Voces nuevas para probar (2026-10-19).** Piper no tiene nada mejor en español (las que
+      faltan son x_low/low) y Kokoro tiene solo las 3 que ya están. Lo nuevo:
+      - **Supertonic 3** (66M, ONNX, CPU, licencia OpenRAIL): NUEVO, 10 voces (M1-M5, F1-F5),
+        las 10 entendidas palabra por palabra por Whisper, ~1.3 s por 8 s de audio. Acento
+        neutro de España/LatAm a juzgar de oído.
+      - **Pocket TTS 3.3** (Kyutai, CPU): ya medido el 10-16 con lola; ahora sus otras voces
+        (charles, marius, javert, giovanni) también hablan con el modelo español y se
+        entienden; primer audio a 0.08 s en streaming, 3.4× tiempo real. Clonar una voz
+        propia (una voz "de Bender" grabada) pide aceptar la licencia en Hugging Face.
+      - Qwen3-TTS y Chatterbox: no entran en la 5060 junto al VLM (ver MODEL_BENCHMARKS §3).
+      - Muestras para escuchar: `AI-VL-core/results/tts_samples/new_2026-10-19/` (misma frase;
+        `now_*` son las voces actuales para comparar). **Falta: que el usuario elija**; la que
+        guste se cablea en `tts_common` como un motor más y aparece en el selector.
 - [ ] El VLM se niega a adivinar nacionalidad por la cara (entrenamiento de Qwen, no nuestro prompt).
       Probado 2026-10-16: una instrucción "sin sermones" no lo cambia y rompe la lectura de marcas;
       queda el prompt original. Solo estima con pistas visibles (bandera, camiseta, carteles).
