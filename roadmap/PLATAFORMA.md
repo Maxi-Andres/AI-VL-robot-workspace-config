@@ -252,7 +252,9 @@ libreta de ideas; lo que se decide hacer sube acá.
       modelo pasa a ser un dato por palabra clave. Medido: 17.84 kW 6/6, y a "estás en el medio"
       contesta "No, no estoy impidiendo el paso. Estoy aquí para ayudarte". La hora es un dato
       con `{now}` (hora local de la PC). La brevedad NO va en el prompt (una frase "sé breve" dio
-      0/6 en 17.84): al hablar se dicen como máximo 3 frases y la pantalla muestra todo. Los
+      0/6 en 17.84): al hablar se dicen ~90 palabras (la frase que las cruza se termina) y después
+      "El resto lo tenés en la pantalla". Primero fue un tope de 3 frases y cortaba las listas
+      (cada ítem es una frase: "En la mesa veo" quedó en dos objetos); arreglado el mismo día. Los
       "..." ya no cortan frases: se dicen como una pausa.
 - [ ] **Bender útil — plan para implementar (pedido 2026-10-19: "todo eso").** Todo en iacore, que
       ya arma la pregunta (`free_prompt_system`); el front y el backend no cambian salvo donde se
@@ -307,7 +309,9 @@ libreta de ideas; lo que se decide hacer sube acá.
         entienden; primer audio a 0.08 s en streaming, 3.4× tiempo real. Clonar una voz
         propia (una voz "de Bender" grabada) pide aceptar la licencia en Hugging Face.
       - Qwen3-TTS y Chatterbox: no entran en la 5060 junto al VLM (ver MODEL_BENCHMARKS §3).
-      - Muestras para escuchar: `AI-VL-core/results/tts_samples/new_2026-10-19/` (misma frase;
+      - Para escuchar y marcar favoritas: https://claude.ai/artifact/JYzpraNQ9pVckm2j7SraEj
+        (24 voces, misma frase, mismo volumen, con lo que entendió Whisper). Archivos en
+        `AI-VL-core/results/tts_samples/new_2026-10-19/` (misma frase;
         `now_*` son las voces actuales para comparar). **Falta: que el usuario elija**; la que
         guste se cablea en `tts_common` como un motor más y aparece en el selector.
 - [ ] El VLM se niega a adivinar nacionalidad por la cara (entrenamiento de Qwen, no nuestro prompt).
