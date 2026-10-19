@@ -300,8 +300,8 @@ libreta de ideas; lo que se decide hacer sube acá.
 - [ ] **Voces nuevas para probar (2026-10-19).** Piper no tiene nada mejor en español (las que
       faltan son x_low/low) y Kokoro tiene solo las 3 que ya están. Lo nuevo:
       - **Supertonic 3** (66M, ONNX, CPU, licencia OpenRAIL): NUEVO, 10 voces (M1-M5, F1-F5),
-        las 10 entendidas palabra por palabra por Whisper, ~1.3 s por 8 s de audio. Acento
-        neutro de España/LatAm a juzgar de oído.
+        las 10 entendidas palabra por palabra por Whisper, ~1.3 s por 8 s de audio. El acento
+        no está evaluado: hay que escucharlas.
       - **Pocket TTS 3.3** (Kyutai, CPU): ya medido el 10-16 con lola; ahora sus otras voces
         (charles, marius, javert, giovanni) también hablan con el modelo español y se
         entienden; primer audio a 0.08 s en streaming, 3.4× tiempo real. Clonar una voz
