@@ -317,7 +317,10 @@ libreta de ideas; lo que se decide hacer sube acá.
         F2 y F4 (más Davefx y Alex, que ya estaban). Tercer motor en `tts_common`, nombres
         `supertonic-*`, mismo volumen que Kokoro, a 22.05 kHz con filtro (el emisor del G1
         remuestrea lineal). Los instaladores bajan el modelo a `supertonic_models/`.
-      - [ ] **Voz por defecto**: el usuario prueba y elige (hoy sigue Daniela, `TTS_VOICE`).
+      - [x] **Voz por defecto: Alex (Kokoro `em_alex`)** — 2026-10-19, elegida por el usuario "porque
+        es la que mejor pronuncia" (iacore 29cde8e, launchers a70c7c7). El frontend caía a la
+        primera voz de la lista (Daniela) e ignoraba el default del server: arreglado (a7ca72a).
+        Quien ya había elegido una voz en el navegador la conserva.
 - [ ] El VLM se niega a adivinar nacionalidad por la cara (entrenamiento de Qwen, no nuestro prompt).
       Probado 2026-10-16: una instrucción "sin sermones" no lo cambia y rompe la lectura de marcas;
       queda el prompt original. Solo estima con pistas visibles (bandera, camiseta, carteles).
