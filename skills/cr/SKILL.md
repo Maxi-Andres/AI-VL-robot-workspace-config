@@ -12,8 +12,8 @@ description: >-
 
 # /cr — workspace code review
 
-Review **uncommitted** work before the user commits. Read-only: report findings; never
-`git commit`/`git push`, and don't edit files unless the user explicitly asks for fixes
+Review **uncommitted** work before it is committed. Read-only: report findings; the review
+itself never commits or pushes, and don't edit files unless the user explicitly asks for fixes
 afterward.
 
 ## Scope (args)

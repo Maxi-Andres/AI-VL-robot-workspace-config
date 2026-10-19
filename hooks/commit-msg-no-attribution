@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# commit-msg hook: no commit in these repos may credit Claude, Anthropic or any AI — no
+# Co-Authored-By, no "Generated with", no AI author. The user's rule, 2026-10-19: "nunca
+# aparecer como contribuyente ni coauthor, en ningún repositorio, bajo ninguna circunstancia".
+# Installed into every repo's .git/hooks/commit-msg by ~/Desktop/.claude/install-commit-hooks.sh.
+msg="$1"
+bad=$(grep -inE 'co-authored-by:.*(claude|anthropic|openai|copilot|gpt|gemini|\bai\b)|noreply@anthropic\.com|generated (with|by) .*(claude|ai\b)|claude\.com/claude-code|claude\.ai/code|🤖' "$msg" | grep -v '^[0-9]*:#')
+if [ -n "$bad" ]; then
+  echo "commit-msg: REJECTED — the message credits an AI:" >&2
+  echo "$bad" >&2
+  echo "Remove those lines: commits here never credit Claude/Anthropic or any AI." >&2
+  exit 1
+fi
+ident="$(git var GIT_AUTHOR_IDENT) / $(git var GIT_COMMITTER_IDENT)"
+if echo "$ident" | grep -qiE 'claude|anthropic'; then
+  echo "commit-msg: REJECTED — author or committer is not the user: $ident" >&2
+  exit 1
+fi
+exit 0

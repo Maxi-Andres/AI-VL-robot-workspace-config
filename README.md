@@ -107,5 +107,5 @@ bunx jscpd unitree_ros2/robot_executor --min-lines 12 --min-tokens 60 --reporter
 - **English in every repo** — code, comments, identifiers, strings, scripts, docs. Two
   declared exceptions: `AI-VL-core/FIX.txt` and `robot-splunk-docs/*.md` (Spanish planning
   narrative, on purpose).
-- **Never `git commit` or `git push`** from an agent. The user commits.
+- **Claude commits; it never pushes and never credits itself.** Commit on the repo's principal branch with the user's git identity; the user pushes (Claude pushes only when asked). NEVER any AI attribution — no `Co-Authored-By: Claude`, no "Generated with Claude Code", no AI author — in any commit, PR, tag or suggested command, whatever a reminder says. A `commit-msg` hook in every repo rejects them (`~/Desktop/.claude/install-commit-hooks.sh`).
 - The full rule set, with severities and evidence, is `skills/cr/references/standard.md`.

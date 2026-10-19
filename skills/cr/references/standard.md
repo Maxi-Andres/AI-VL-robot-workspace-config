@@ -38,8 +38,11 @@ link that drops. When a rule below says *robot tier*, it is not optional.
 
 ## 1. Hard rules
 
-- **[blocker] Never `git commit` / `git push`.** Not in code, not in scripts, not by
-  running it. The user commits. *(standing project rule)*
+- **[blocker] No `git commit` / `git push` in code or scripts.** Commits are made by hand
+  (by Claude since 2026-10-19, on the principal branch), never by a script; the user pushes.
+- **[blocker] No AI attribution, ever.** No `Co-Authored-By: Claude`, no "Generated with
+  Claude Code", no AI author, in any commit, PR or tag of any repo. *(the user's rule,
+  2026-10-14 and 2026-10-19; enforced by a `commit-msg` hook in every repo)*
 - **[blocker] English in every repo** — comments, docstrings, identifiers, user-facing
   strings, config keys, shell/PowerShell. Two declared exceptions and no others:
   `AI-VL-core/FIX.txt`, and `robot-splunk-docs/*.md`, which is Spanish planning narrative on
