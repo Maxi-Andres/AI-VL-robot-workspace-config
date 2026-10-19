@@ -312,8 +312,12 @@ libreta de ideas; lo que se decide hacer sube acá.
       - Para escuchar y marcar favoritas: https://claude.ai/artifact/JYzpraNQ9pVckm2j7SraEj
         (24 voces, misma frase, mismo volumen, con lo que entendió Whisper). Archivos en
         `AI-VL-core/results/tts_samples/new_2026-10-19/` (misma frase;
-        `now_*` son las voces actuales para comparar). **Falta: que el usuario elija**; la que
-        guste se cablea en `tts_common` como un motor más y aparece en el selector.
+        `now_*` son las voces actuales para comparar).
+      - [x] **Supertonic en la app** — 2026-10-19 (iacore 6f8274b): elegidas de oído M1, M2, M3,
+        F2 y F4 (más Davefx y Alex, que ya estaban). Tercer motor en `tts_common`, nombres
+        `supertonic-*`, mismo volumen que Kokoro, a 22.05 kHz con filtro (el emisor del G1
+        remuestrea lineal). Los instaladores bajan el modelo a `supertonic_models/`.
+      - [ ] **Voz por defecto**: el usuario prueba y elige (hoy sigue Daniela, `TTS_VOICE`).
 - [ ] El VLM se niega a adivinar nacionalidad por la cara (entrenamiento de Qwen, no nuestro prompt).
       Probado 2026-10-16: una instrucción "sin sermones" no lo cambia y rompe la lectura de marcas;
       queda el prompt original. Solo estima con pistas visibles (bandera, camiseta, carteles).
