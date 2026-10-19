@@ -272,14 +272,11 @@ libreta de ideas; lo que se decide hacer sube acá.
 - [ ] Decidir qué hacer con `AI-VL-ecosystem/.mcp.json` y su hook en `settings.local.json`:
       inofensivo mientras las sesiones se abran desde `~/Desktop`, pero abrir desde ese
       directorio carga una config que indexa 4 de 11 repos.
-- [ ] **Terminar la convención de ramas del 10-09** (tabla completa en §0). Tres cosas:
-      renombrar `master` → `main` en `robot-command-relay` desde GitHub; mergear a la
-      principal `robot-ecosystem` y `robot-splunk-docs`, que siguen en `dev`; y decidir qué
-      pasa con `unitree_ros2`, que está en `feature/dev2` **y tiene código que corre en el
-      robot**. Mientras tanto ningún `for` sobre los repos puede asumir una rama.
-- [ ] **`AI-VL-frontend` está en la rama `feature/both-robots-same-tiem`** mientras sus tres
-      hermanos están en `...same-time`. Verificado el 2026-09-10, sigue así. Va a molestar
-      cuando los PR suban juntos.
+- [x] **Convención de ramas** — 2026-10-19: todos los repos en su principal (`main`, o `master` en
+      `robot-ecosystem` y `robot-command-relay`); `unitree_ros2` usa `main` para lo nuestro y deja
+      `master` como copia de Unitree. Ver `ROADMAP.md` §0. Las ramas viejas siguen existiendo.
+- [x] ~~`AI-VL-frontend` en `feature/both-robots-same-tiem`~~ — resuelto 2026-10-19: los cuatro
+      repos de AI-VL trabajan en `main`.
 - [ ] **Cerrar `ARQUITECTURA_ROBOT_G1_PROPUESTA.md`**, que la cabecera del ROADMAP daba
       por borrado desde el 28-08 y sigue trackeado (ver el aviso al principio de `../ROADMAP.md`). Antes de
       borrarlo hay que sacar las dos referencias vivas: `AI-VL-ecosystem/ROBOT_CONTROL.md` y

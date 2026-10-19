@@ -82,24 +82,22 @@ tabla de arriba.
 > bitácora que lo justifica. Lo que engordaba este archivo era escribir las dos cosas en el
 > mismo lugar cada vez que se medía algo.
 
-**Convención de ramas (2026-09-10):** `dev` es desarrollo; **el robot y cualquier despliegue
-usan la rama principal**. Se mergea `dev` → principal (por PR) y el robot hace `git pull`
-como siempre. Aplicado el 10-09 en los **tres repos de código del robot**, y solo en ésos.
+**Convención de ramas (2026-10-19, reemplaza la del 10-09):** **se trabaja directo en la rama
+principal de cada repo**, y el robot hace `git pull` de esa misma. Ya no hay `dev` ni ramas
+`feature/*` vivas: el 2026-10-19 cada principal se adelantó (fast-forward, sin merges) hasta su
+rama de trabajo, que contenía a todas las demás. Las ramas viejas **no se borraron** (decisión
+del usuario); quedan como historia.
 
-Estado real de las 11 ramas, verificado el 2026-09-10 — la convención está a medias:
-
-| Repo | Rama hoy | |
+| Repo | Principal | |
 |---|---|---|
-| `robot-video-pipeline`, `robot-telemetry-agent` | `main` | ✅ convención aplicada |
-| `robot-command-relay` | **`master`** | ⚠️ el único con `master`; hay que unificarlo desde GitHub |
-| `robot-ecosystem` (umbrella), `robot-splunk-docs` | `dev` | ⚠️ sin mergear a la principal |
-| `unitree_ros2` | `feature/dev2` | ⚠️ y tiene código que corre en el robot |
-| `AI-VL-ecosystem` + `AI-VL-core` + `AI-VL-backend` | `feature/both-robots-same-time` | — |
-| `AI-VL-frontend` | **`feature/both-robots-same-tiem`** | ⚠️ typo, ver §7.6 |
-| `unitree_sdk2` | vendor | — |
+| `AI-VL-ecosystem` + `AI-VL-core` + `AI-VL-backend` + `AI-VL-frontend` | `main` | venían de `feature/both-robots-same-time` (`...-tiem` en el frontend) |
+| `robot-video-pipeline`, `robot-telemetry-agent`, `robot-splunk-docs` | `main` | splunk-docs venía de `dev` |
+| `robot-ecosystem` (umbrella), `robot-command-relay` | **`master`** | se dejó el nombre que tienen en GitHub; el relay es el que los robots clonan |
+| `unitree_ros2` (fork) | **`main` = lo nuestro**, `master` = copia de Unitree | Unitree no tiene `main` (solo `master` y `ros2_service_support`), así que no choca. Para traer lo de ellos: `git fetch upstream && git switch master && git merge --ff-only upstream/master && git switch main && git merge master` |
+| `unitree_sdk2` | `main` (de Unitree) | vendor intacto: solo `git pull` |
 
-Las dos que muerden: `master` vs `main` y el typo del frontend **rompen cualquier `for` sobre
-los repos**, que es exactamente como está escrito el health check de §8.
+Lo que todavía muerde: `master` vs `main` **rompe cualquier `for` sobre los repos** que asuma una
+sola rama (como el health check de §8): usar `git branch --show-current`, no un nombre fijo.
 
 **Regla de mantenimiento:** si este documento y otro se contradicen, gana este — y el otro
 está roto y hay que arreglarlo. Si algo se termina, se tacha acá, no en cinco lugares.

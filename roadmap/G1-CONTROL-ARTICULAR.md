@@ -180,8 +180,16 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
         `tools/gen_g1_arm_model.py`; coincide con lo medido: −5.5 vs −6.7 hombro, −2.35 vs −3.0
         codo, brazo derecho ±0.2). Test que falla con el freno viejo. **Falta probarlo con el
         robot** (deploy por `git pull` + `./build.sh` en PC2).
-      - Siguiente paso posible: mandar ese torque de gravedad como *feedforward* (`motor_cmd.tau`)
-        para que el brazo no quede ~10° abajo del destino cuando está horizontal.
+- [ ] **Feedforward de gravedad** — pedido 2026-10-16, después de probar el freno nuevo. Mandar el
+      torque de sostener el brazo (el mismo `arm_gravity()` del freno) en `motor_cmd.tau`, así el
+      "resorte" (kp 60, ~1 N·m por grado) no tiene que estirarse: hoy, con el brazo adelante y el
+      codo doblado, queda **~8° abajo** del destino (8.5 N·m de peso / 60). Sirve para precisión
+      (agarrar, grabar demos para GR00T) y permitiría bajar kp (brazo más blando).
+      Cuidados: (1) confirmar que `rt/arm_sdk` respeta `tau` (el ejemplo de Unitree lo deja en 0);
+      (2) el brazo izquierdo real pesa ~20 % más que el URDF → quedaría ~1.5° abajo, no 0; si el
+      modelo pesara de más, el brazo subiría; (3) que suba con el peso del `take` y baje con el
+      release, con tope de fuerza, y apagable por env (`JOINT_CTL_FEEDFORWARD=0`); (4) probarlo
+      primero en un brazo, despacio, mirando.
       Probado esa noche: **peor** — seguía temblando y cada sesión se soltaba sola a los 1-10 s
       con "Released: the robot's mode could not be read" (`fsm_lost`). **Causa medida:** el
       servicio del relay tenía `CPUQuota=25%` y en el G1 corre también el visor y el sender, que
