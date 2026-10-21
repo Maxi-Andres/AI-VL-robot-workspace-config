@@ -329,7 +329,9 @@ atribución y la leyenda "Built on NVIDIA Cosmos". Datasets de NVIDIA de G1: CC-
    Vision Pro.
 3. **GPU** — indispensable (confirmado por el usuario 2026-10-13). Opciones con precios en el
    paso 1 (2026-10-16); recomendado empezar alquilando. Bloquea 1A, 1B y el paso 5. El paso 0
-   está hecho (pestaña Joints, 2026-10-13/16).
+   está hecho (pestaña Joints, 2026-10-13/16). **2026-10-21: decidido alquilar** (GPUs con la
+   VRAM que pida cada modelo, por horas). Un server propio con mucha VRAM quizá más adelante,
+   **sin garantía**: nada del plan puede depender de que llegue (`G1.md` §6.7 punto 4).
 4. **Cámaras de muñeca**: sí/no/después.
 5. **Primera tarea**: cuál, con qué objetos.
 

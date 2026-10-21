@@ -233,7 +233,7 @@ Todo lo que **no** necesita robot está en §7 y §8, y es lo que conviene hacer
 | **Transporte: SDK nativo vs ROS2** | **principio decidido 2026-10-21:** ejecución nativa detrás del relay, ROS2 solo arriba (planificación en el edge: MoveIt 2, Nav2). Sigue abierto: migrar el executor de la PC a SDK, unificar las tablas de comandos y achicar el contenedor privilegiado | `AI-VL-ecosystem/docs/TRANSPORT_SDK_VS_ROS2.md` · `roadmap/G1.md` §6.7-§6.8 |
 | **Cómo separar los dos robots** (dominio DDS vs interfaz) | abierta — bloquea 4 pasos | `docs/SEPARAR_ROBOTS_MULTIPLES.md` (AI-VL) y `robot-video-pipeline/docs/DOS-ROBOTS.md` (video) |
 | **Video on-demand vs continuo** en campo | abierta | §5.2 |
-| **Dónde corre el lector de telemetría del G1**: esta PC por DDS sobre CURWB vs a bordo en PC2 | abierta — la decide la validación de CURWB (§6.3) | `roadmap/G1.md` §6.5 |
+| ~~**Dónde corre el lector de telemetría del G1**: esta PC por DDS sobre CURWB vs a bordo en PC2~~ | **cerrada 2026-09-30: a bordo en PC2** (el usuario eligió WiFi; por WiFi el DDS no cruza). Desde 2026-10-21 el enlace del G1 solo necesita IP | `roadmap/G1.md` §6.3, §6.5, §6.7 punto 4 |
 | **Profundidad del G1**: deproyección clásica vs aprendizaje | abierta, depende de qué cámara trae | §6.3 |
 | **ThousandEyes: exponer el HEC a internet** | abierta — es el único camino oficial | `LICENCIA-Y-THOUSANDEYES.md` §5.2 |
 | **Los 26 tests de TE que no llegan a Splunk** (M365, DNS, BGP, page-load) | abierta — son de IT corporativo, ¿van a otro tablero? | `LICENCIA-Y-THOUSANDEYES.md` §6.1 |
