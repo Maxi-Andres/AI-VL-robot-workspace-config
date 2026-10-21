@@ -392,6 +392,25 @@ Lo que quedó en `joint_ctl_core.hpp` (J2), con sus valores por defecto; cada un
   corre el centro de masa.
 - Operador con el control remoto en la mano en todas las pruebas con movimiento.
 
+**Falta (del plan del 2026-10-21, `G1.md` §6.7 punto 10)** — reglas nuevas para
+`joint_ctl_core.hpp`, cada una con su test como las de arriba:
+
+- [ ] **Espacio de trabajo cartesiano de la mano:** una caja fuera de la cual no se acepta
+      destino (hoy solo hay límites articulares, que no impiden, por ejemplo, ir hacia la cara
+      de alguien).
+- [ ] **Modo manual o automático, en la sesión:** quién manda (la página Joints, o el
+      planificador / la política) visible y registrado; hoy la sesión es exclusiva pero no dice
+      de qué tipo es.
+- [ ] **Vencimiento de los bloques de acciones** que vienen de afuera (planificador, VLA en GPU
+      alquilada): un bloque que llega tarde no se ejecuta.
+- [ ] **Soltar con carga:** hoy soltar baja los brazos en 2 s a la postura de PC1 y "Give arms
+      back" devuelve las manos a su posición inicial (las abre) — **con un objeto en la mano,
+      lo deja caer.** Si los dedos están cerrados sobre algo (corriente alta o estado 2 =
+      trabado), congelar y avisar en vez de bajar; no abrir la mano; bajar recién con
+      confirmación. Sin carga, como hoy.
+- El chequeo de colisiones **planificado** (antes de moverse) no va acá: es de la fase 4 de
+  `G1.md` §6.2 (MoveIt 2 o IK propia). Acá queda el freno reactivo.
+
 ## 5. Decisiones abiertas
 
 - ~~Salto backend → relay~~: por el executor (2026-10-13).
