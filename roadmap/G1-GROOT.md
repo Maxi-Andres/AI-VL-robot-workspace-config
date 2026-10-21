@@ -316,8 +316,15 @@ los skills que ya existen.
       streaming (SSE o el WS existente), no al final.
 - [ ] El cerebro detrás: un LLM con herramientas (los skills del catálogo + "mirar la cámara"
       con la VLM + más adelante `manipulate`) que reemplaza al intérprete de un solo skill.
+      **2026-10-21: sus herramientas son las acciones de `G1.md` §6.9** (objetivo → progreso →
+      resultado éxito/incierto/fallo, con cancelación y timeout propios), no los skills de
+      disparo: para encadenar agarrar → llevar → soltar tiene que saber si el paso anterior
+      salió. Los skills de disparo siguen para la voz directa.
       Siempre detrás de Safe/STOP: el botón de STOP vive también en esta pestaña.
 - [ ] Skill nuevo `manipulate(instruction)` en el catálogo de `AI-VL-core` (`command_common.py`).
+      **2026-10-21:** es la implementación de `GraspObject` / `PlaceObject` (§6.9 de `G1.md`) con
+      la política aprendida; antes de la política, las mismas acciones las cumple el agarre
+      determinístico de la fase 4.
 - [ ] El executor arranca el cliente de política con la instrucción, con tiempo máximo.
 - [ ] **Arbitraje**: mientras corre, el relay rechaza locomoción y acciones de brazo; al
       terminar, el peso de `arm_sdk` baja a 0 en 2 s y PC1 recupera los brazos.
