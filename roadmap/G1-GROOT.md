@@ -179,6 +179,11 @@ demos, tarea "manzana al plato". Es lo más cerca de "un modelo que ya sabe" que
 
 ### Paso 1B — Simulación con demos generadas por código, sin casco
 
+> **2026-10-21: opcional** (`G1.md` §6.7 punto 12). Solo en GPU alquilada y solo si el repo
+> trae G1 + BrainCo. La fuente principal de datos sin casco pasa a ser **el agarre
+> determinístico en el robot real** (paso 1C, punto 8), que no tiene el problema de la
+> transferencia sim → real.
+
 - [ ] `unitree_sim_isaaclab` con G1-29 + Dex3 (tareas PickPlace-Cylinder, PickPlace-RedBlock,
       Stack-RgyBlock). ⚠️ **2026-10-21: nuestras manos son BrainCo** — **a verificar** si el repo
       trae G1 + BrainCo; si solo trae Dex3, la sim no sirve para las manos. Pide Isaac Sim 5.x en RTX 50 y probado solo en 3080/3090/4090 — la 5060 de
@@ -296,6 +301,10 @@ G1. Por eso **no bloquea el paso 5**: GR00T se ataca apenas haya GPU alquilada.
       `rt/arm_sdk` + `rt/dex3/*`": directo se saltearía los frenos, y desde 2026-10-21 la
       ejecución va siempre detrás del relay (`G1.md` §6.7 punto 3). Falta en el relay la
       operación de trayectoria (`G1.md` §6.8).
+- [ ] **Antes de los 20 intentos: en seco y en el robot quieto**, no en sim (`G1.md` §6.7
+      punto 12): mirar las acciones que propone sin mandarlas, después mandarlas a velocidad
+      reducida. Una política entrenada con cámara real no ve lo mismo en sim; probarla ahí no
+      dice nada. Vale igual para ACT y SmolVLA.
 - [ ] Los mismos 20 intentos del paso 4.
 - **Hecho cuando:** GR00T le gana a ACT en la misma tarea, medido.
 
