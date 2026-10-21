@@ -20,7 +20,7 @@
 | **PC1** (cerrado) | Caminar y equilibrar. **Sigue mandando las piernas** en el camino A | el robot |
 | **PC2** (Orin NX 16 GB, JetPack 5.1.1) | Cámara + cliente de la política: lee estado, le pide acciones al servidor, las escribe en `rt/arm_sdk` y en el servicio de las manos (Inspire, ver §2) | el robot |
 
-La VLM y GR00T no compiten: la VLM es el capataz que dice "ahora agarrá la taza", GR00T es la
+La VLM y GR00T no compiten: la VLM es el capataz que dice "ahora agarrá la botella", GR00T es la
 mano que sabe agarrarla. GR00T trae su propia VLM adentro (Cosmos-Reason2-2B), pero solo para
 condicionar el movimiento: no reemplaza a la nuestra.
 
@@ -239,8 +239,9 @@ demos, tarea "manzana al plato". Es lo más cerca de "un modelo que ya sabe" que
 
 ### Paso 3 — Una sola tarea, chica y fija, y los primeros 50 episodios
 
-- [ ] Elegir **una** tarea angosta: robot parado frente a una mesa fija, "agarrá la taza y
-      ponela en la caja". Misma mesa, misma luz, posiciones de la taza variadas.
+- [ ] Elegir **una** tarea angosta: robot parado frente a una mesa fija, "agarrá la botella y
+      ponela en la caja" (decidido 2026-10-21, §8 decisión 5). Misma mesa, misma luz,
+      posiciones de la botella variadas.
 - [ ] `--record` → 50 episodios de ~20-30 s. Calcular ~1-1.5 h de grabación con los reseteos.
 - [ ] Convertir con `unitree_IL_lerobot` (`convert_unitree_json_to_lerobot.py --robot_type`
       **variante BrainCo** — decía `Unitree_G1_Dex3`; **a verificar** el nombre exacto y que el
@@ -328,8 +329,8 @@ los skills que ya existen.
 - [ ] El executor arranca el cliente de política con la instrucción, con tiempo máximo.
 - [ ] **Arbitraje**: mientras corre, el relay rechaza locomoción y acciones de brazo; al
       terminar, el peso de `arm_sdk` baja a 0 en 2 s y PC1 recupera los brazos.
-- [ ] La VLM mira el cuadro final y responde "¿la taza está en la caja?" → feedback hablado.
-- **Hecho cuando:** "agarrá la taza y ponela en la caja" por voz termina con el robot diciendo
+- [ ] La VLM mira el cuadro final y responde "¿la botella está en la caja?" → feedback hablado.
+- **Hecho cuando:** "agarrá la botella y ponela en la caja" por voz termina con el robot diciendo
   si lo logró, y es cierto.
 
 ### Paso 7 — Escalar
@@ -385,7 +386,10 @@ atribución y la leyenda "Built on NVIDIA Cosmos". Datasets de NVIDIA de G1: CC-
    VRAM que pida cada modelo, por horas). Un server propio con mucha VRAM quizá más adelante,
    **sin garantía**: nada del plan puede depender de que llegue (`G1.md` §6.7 punto 4).
 4. **Cámaras de muñeca**: sí/no/después.
-5. **Primera tarea**: cuál, con qué objetos.
+5. **Primera tarea** — **decidida 2026-10-21: una botella de plástico liviana, de la mesa a una
+   caja al lado**, robot quieto frente a una mesa fija (`G1.md` §6.7 punto 11). Liviana, rígida y
+   fácil para YOLO; la taza (lo que decía antes) tiene asa y es más difícil con cinco dedos. Es
+   la misma tarea para el agarre determinístico (fase 4), ACT, SmolVLA y GR00T.
 
 ## Fuentes (consultadas 2026-10-13)
 

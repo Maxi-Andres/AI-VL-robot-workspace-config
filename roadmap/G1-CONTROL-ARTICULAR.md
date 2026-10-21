@@ -47,9 +47,9 @@ three.js + urdf-loader  ──WebSocket──▶ AI-VL-backend  ──▶ (execu
   sobre LTE se nota).
 - **Backend**: `/ws/joints` (ver, solo lectura) y **`/ws/joint-control`** (mover), separados a
   propósito. El token del relay y el id de sesión nunca llegan al navegador.
-- **Modelo 3D**: cuerpo lock-waist + manos **Inspire DFQ**, de `g1_description` en
-  `~/Documents/LuckyEngine/Projects/Walking Pick and Place/Assets/Robots/g1_description/`,
-  mallas reducidas a 6.1 MB.
+- **Modelo 3D**: cuerpo lock-waist + manos **BrainCo** (`unitree_ros/robots/g1_with_brainco_hand`,
+  BSD-3, desde el 2026-10-15, J4). Decía "manos Inspire DFQ" de `g1_description` (LuckyEngine):
+  era el primero, viejo desde que se confirmaron las manos. Corregido 2026-10-21.
 - Solo por el relay, no por DDS directo desde esta PC: un solo camino que asegurar.
 
 ## 3. Pasos
