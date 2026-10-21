@@ -230,7 +230,7 @@ Todo lo que **no** necesita robot está en §7 y §8, y es lo que conviene hacer
 
 | Decisión | Estado | Dónde está el análisis |
 |---|---|---|
-| **Transporte: SDK nativo vs ROS2** | abierta, diferida a propósito | `AI-VL-ecosystem/docs/TRANSPORT_SDK_VS_ROS2.md` |
+| **Transporte: SDK nativo vs ROS2** | **principio decidido 2026-10-21:** ejecución nativa detrás del relay, ROS2 solo arriba (planificación en el edge: MoveIt 2, Nav2). Sigue abierto: migrar el executor de la PC a SDK, unificar las tablas de comandos y achicar el contenedor privilegiado | `AI-VL-ecosystem/docs/TRANSPORT_SDK_VS_ROS2.md` · `roadmap/G1.md` §6.7-§6.8 |
 | **Cómo separar los dos robots** (dominio DDS vs interfaz) | abierta — bloquea 4 pasos | `docs/SEPARAR_ROBOTS_MULTIPLES.md` (AI-VL) y `robot-video-pipeline/docs/DOS-ROBOTS.md` (video) |
 | **Video on-demand vs continuo** en campo | abierta | §5.2 |
 | **Dónde corre el lector de telemetría del G1**: esta PC por DDS sobre CURWB vs a bordo en PC2 | abierta — la decide la validación de CURWB (§6.3) | `roadmap/G1.md` §6.5 |
