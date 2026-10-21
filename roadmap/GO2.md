@@ -502,6 +502,16 @@ posición inventada y el panel tiene que dejarlo ver.
 > ✅ **Indicador de carga** en los tableros del Go2 y del G1: un cartel flotante "Cargando datos…"
 > hasta que termina la búsqueda de motores (también con el robot apagado; en el G1 hubo que
 > agregarle la rama de 0 resultados, que no existía).
+> 🟡 **2026-10-20: "cargando" en Splunk, igual que en la app.** Construido en el repo, **sin
+> subir a Splunk ni ver en vivo** (no hay SSH a `.20.200`). El single "Batería" de
+> `go2-telemetria-thousandeyes`, `go2-telemetria` y `g1-telemetria-thousandeyes` lleva debajo
+> "cargando" / "con batería" / "corriente sin dato", más "lectura de hace HH:MM:SS" si el
+> evento tiene más de 60 s; el nodo de la topología dice "95% cargando" en vez de "95% batería".
+> Misma regla que el relay para la app: signo de `battery.current`, **positivo = cargando**
+> (medido en el Go2: +475 mA en el dock, −5678 fuera). No hizo falta tocar el agente: el campo
+> ya viajaba en `robot:vitals`. ⚠️ En el G1 el signo **no está medido**, solo lo dice un
+> comentario del reader; confirmarlo poniéndolo a cargar. El color sigue por carga, no por
+> carga en curso. [ ] subir los dos del Go2 + refresh de splunkweb; [ ] verlo con el Go2 en el dock y fuera.
 
 **Decidido el 2026-09-04.** El modelo es **un dashboard de Splunk por robot**, no uno
 compartido con selector. `dashboard-go2.xml` es el primero y define el patrón:

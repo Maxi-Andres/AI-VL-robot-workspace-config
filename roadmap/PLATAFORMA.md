@@ -194,6 +194,13 @@ seguridad documentada que ningún test ejercita**.
 Lo que estaba en `FIX.txt` como notas crudas, ordenado. `FIX.txt` sigue existiendo como
 libreta de ideas; lo que se decide hacer sube acá.
 
+- [ ] **Pasada completa de UI y UX de la app** (pedido 2026-10-20, para después). No un arreglo
+      puntual: revisar las cinco pestañas (Live, Drive, Robot, Video, Joints) como un todo —
+      jerarquía visual, densidad del header, consistencia de controles y estados, flujos que no
+      se entienden. Absorbe a los ítems sueltos de UX de esta lista (vista de VLM, pill de
+      estado, SAFE_MODE en rojo, selección de robot global). Ya hecho como punto de partida:
+      logo de Silk en el header (frontend `6ab8ba2`, `2e35f21`). Pendiente parecido en Splunk:
+      un ícono de carga más visual que el texto "cargando" (`GO2.md` §5.6).
 - [ ] **`"caminá un segundo"` sigue caminando indefinidamente.** Es el mismo bug que el P0 de
       `continuous` en §7.1 — se arregla ahí, no en el front.
 - [ ] **La app se fija en `192.168.123.161` al iniciar**, que es el bajo nivel de *los dos*
