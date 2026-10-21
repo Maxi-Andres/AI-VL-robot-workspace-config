@@ -8,7 +8,6 @@
 > GR00T se mueve rápido. Lo que dice "verificado 2026-10-13" puede cambiar: re-chequear la
 > versión y los requisitos antes de cada compra o cada fine-tune.
 
-
 > **Dónde vive el código de este plan** (2026-10-21, `G1.md` §6.7 punto 14): en un repo nuevo,
 > **`robot-ecosystem/robot-learning`** — grabación, conversión a LeRobot, configuraciones de
 > entrenamiento (ACT, SmolVLA, GR00T), contenedor del servidor de la política para la GPU
