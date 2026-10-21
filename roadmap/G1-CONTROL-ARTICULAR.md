@@ -287,6 +287,12 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
       avisos de Joints parten línea (`StatusText wrap`). Y en el visor, arriba a la izquierda,
       **"Warm joints"**: cada articulación sobre la banda normal (≥ 55 °C) con su temperatura,
       la más caliente primero, en el color en que se pinta; clic la selecciona.
+- [ ] **¿Son Revo 2 *Touch* (táctiles)?** (2026-10-21, `G1.md` §6.7 punto 1.) Que son BrainCo
+      Revo 2 está confirmado por Modbus; que tengan yemas táctiles, **no**. El plan del
+      2026-10-21 lo da por hecho y su Fase 1 confirma el agarre por tacto. El usuario lo busca
+      en el robot (etiqueta / compra); la prueba por código es leer los registros táctiles de la
+      variante Touch y ver si contestan y cambian al apretar una yema. Si no son Touch, el agarre
+      se confirma por corriente del motor y estado 2 = trabado (registros 2012-2023, ya leídos).
 
 > **Revisado 2026-10-15 en el robot y en las fuentes.** En el robot: en `192.168.123.0/24` solo
 > contestan PC1 (.161), PC2 (.164) y el lidar Mid-360 (.120); PC2 no tiene ningún

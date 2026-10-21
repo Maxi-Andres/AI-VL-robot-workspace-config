@@ -14,7 +14,7 @@
 
 | Pieza | Qué hace | Dónde corre |
 |---|---|---|
-| **VLM de la app** (`qwen3-vl:4b` en Ollama, `AI-VL-core`) | Entiende la escena y la frase, decide **qué** hacer ("agarrá la taza") y verifica si salió | esta PC |
+| **VLM de la app** (Qwen3-VL-4B-Instruct Q4_K_M en llama-server propio, `:8081`, `AI-VL-core`; antes `qwen3-vl:4b` en Ollama) | Entiende la escena y la frase, decide **qué** hacer ("agarrá la taza") y verifica si salió | esta PC |
 | **GR00T N1.7** (VLA, 3B) | Recibe imagen + estado del robot + una instrucción corta y devuelve **cómo** mover brazos y dedos (trozos de acción) | un servidor con GPU (no PC2, ver §3) |
 | **PC1** (cerrado) | Caminar y equilibrar. **Sigue mandando las piernas** en el camino A | el robot |
 | **PC2** (Orin NX 16 GB, JetPack 5.1.1) | Cámara + cliente de la política: lee estado, le pide acciones al servidor, las escribe en `rt/arm_sdk` y en el servicio de las manos (Inspire, ver §2) | el robot |
@@ -46,7 +46,10 @@ condicionar el movimiento: no reemplaza a la nuestra.
 - Cámara de cabeza: **RealSense D435i, monocular** (los datasets de Unitree usan cabeza estéreo
   + dos cámaras de muñeca; nosotros no tenemos las de muñeca).
 - PC2: Jetson **Orin NX 16 GB, JetPack 5.1.1 (L4T R35.3.1)**, 1.8 TB libres.
-- Esta PC: **RTX 5060 8 GB**.
+- Esta PC: **RTX 5060 8 GB**. Minisforum **G1 Pro** (así lo dice la placa), **Ubuntu 26.04.1**,
+  **28 GiB de RAM utilizables** (verificado 2026-10-21). ROS2 Humble existe **solo dentro del
+  contenedor** (Ubuntu 22.04.5), no en la PC: el plan del 2026-10-21 decía "22.04.5" y "32 GiB
+  utilizables" por eso (`G1.md` §6.7 punto 1).
 - 🔴 **Camina echado para atrás** desde la última calibración (`G1.md` §6.4). Hay que
   arreglarlo antes de grabar datos.
 
@@ -262,7 +265,7 @@ los skills que ya existen.
 - [ ] Ruta nueva (p. ej. `/agent`) en `App.tsx` + entrada en `Header.tsx`. Layout: video a la
       izquierda (el mismo componente de `/`, con el mismo selector de transporte), chat a la
       derecha.
-- [ ] Entrada: texto o voz (STT de iacore, ya existe). Salida: texto + TTS (Piper, ya existe).
+- [ ] Entrada: texto o voz (STT de iacore, ya existe). Salida: texto + TTS (Kokoro, voz Alex desde 2026-10-19, ya existe).
 - [ ] **Traza visible, en vivo**, como pasos del chat: qué entendió → el plan (lista de
       subtareas) → cada skill que ejecuta y su resultado → qué vio la VLM para verificar. Por
       streaming (SSE o el WS existente), no al final.
