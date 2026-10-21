@@ -16,6 +16,7 @@
 |---|---|---|
 | **VLM de la app** (Qwen3-VL-4B-Instruct Q4_K_M en llama-server propio, `:8081`, `AI-VL-core`; antes `qwen3-vl:4b` en Ollama) | Entiende la escena y la frase, decide **qué** hacer ("agarrá la taza") y verifica si salió | esta PC |
 | **GR00T N1.7** (VLA, 3B) | Recibe imagen + estado del robot + una instrucción corta y devuelve **cómo** mover brazos y dedos (trozos de acción) | un servidor con GPU (no PC2, ver §3) |
+| **Planificador** (fase 6 de `G1.md` §6.2) | Convierte una orden compuesta en una secuencia de skills. **Primero el mismo VLM local**; si no alcanza, un modelo más grande en GPU alquilada (`G1.md` §6.7 punto 5) | esta PC, o la nube si hace falta |
 | **PC1** (cerrado) | Caminar y equilibrar. **Sigue mandando las piernas** en el camino A | el robot |
 | **PC2** (Orin NX 16 GB, JetPack 5.1.1) | Cámara + cliente de la política: lee estado, le pide acciones al servidor, las escribe en `rt/arm_sdk` y en el servicio de las manos (Inspire, ver §2) | el robot |
 
