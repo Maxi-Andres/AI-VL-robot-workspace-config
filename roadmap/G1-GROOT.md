@@ -8,6 +8,17 @@
 > GR00T se mueve rápido. Lo que dice "verificado 2026-10-13" puede cambiar: re-chequear la
 > versión y los requisitos antes de cada compra o cada fine-tune.
 
+
+> **Dónde vive el código de este plan** (2026-10-21, `G1.md` §6.7 punto 14): en un repo nuevo,
+> **`robot-ecosystem/robot-learning`** — grabación, conversión a LeRobot, configuraciones de
+> entrenamiento (ACT, SmolVLA, GR00T), contenedor del servidor de la política para la GPU
+> alquilada, registros de evaluación y la sim MuJoCo. **Los datasets no van a git** (pesan
+> gigas): el repo guarda dónde están y su versión.
+> - [ ] Crearlo con el primer código de aprendizaje (paso 3 o 4), no antes. Al crearlo:
+>       sumarlo al CLAUDE.md del escritorio (pasan a ser 12 repos), instalar el hook de
+>       commits (`~/Desktop/.claude/install-commit-hooks.sh`), agregarlo al índice del grafo y
+>       al `.gitignore` de `robot-ecosystem`.
+
 ---
 
 ## 1. Qué es cada cosa (para no mezclar)
