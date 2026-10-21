@@ -152,9 +152,15 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 
 ### Paso 1A — Probar el modelo YA entrenado, tal cual
 
-`nvidia/GR00T-N1.7-ApplePnP-V1`: entrenado en un **G1 real con nuestro mismo hardware**
-(Dex3-1 + D435 en la cabeza), 402 demos, tarea "manzana al plato". Es lo más cerca de "un
-modelo que ya sabe" que existe.
+`nvidia/GR00T-N1.7-ApplePnP-V1`: entrenado en un G1 real con Dex3-1 + D435 en la cabeza, 402
+demos, tarea "manzana al plato". Es lo más cerca de "un modelo que ya sabe" que existe.
+
+> ⚠️ **2026-10-21: NO es nuestro mismo hardware** (decía eso; era del 2026-10-13, antes de
+> confirmar las manos el 2026-10-15). Nuestras manos son **BrainCo**, no Dex3: de este
+> checkpoint solo sirven las columnas de **brazos**; las de manos no se pueden usar. El paso
+> pierde buena parte de su valor (`G1.md` §6.7 punto 7).
+> - [ ] Buscar un checkpoint o un dataset de G1 **con BrainCo** (Unitree publica datasets
+>       `G1_Brainco_*`). Si existe, reemplaza a este como prueba del paso 1A.
 
 - [ ] Servirlo con `run_gr00t_server.py` en la GPU y leer su `modality.json`: qué estado y qué
       acciones espera, en qué orden y unidades.
@@ -238,19 +244,41 @@ deploy con `eval_g1.py --motion`— con hardware que ya tenemos, antes de gastar
 - [ ] Deploy en el robot, **20 intentos** cronometrados, anotar éxitos.
 - **Hecho cuando:** hay un número de éxito medido (aunque sea 30 %: prueba la cañería).
 
-### Paso 5 — GR00T N1.7
+### Paso 4b — SmolVLA, prueba de costado (no es un escalón obligatorio)
+
+Agregado el 2026-10-21 (`G1.md` §6.7 punto 7, viene del plan del 2026-10-21). Es el primer VLA
+**condicionado por lenguaje** de la escalera (~450M) y usa el mismo formato LeRobot que ACT, así
+que reusa los mismos episodios. Expectativa honesta: **por debajo de GR00T** — lo preentrenaron
+con brazos chicos de escritorio (SO-100), no con humanoides; GR00T sí trae preentrenamiento con
+G1. Por eso **no bloquea el paso 5**: GR00T se ataca apenas haya GPU alquilada.
+
+- [ ] **A verificar:** si entrena en la 5060 (8 GB, con el VLM apagado: con el VLM corriendo ya
+      va por 6.5 GB). **Si no entra, no se alquila para esto** — se salta.
+- [ ] Mismos 20 intentos que ACT, misma tarea.
+- **Hecho cuando:** hay un número comparable al de ACT, o se descartó por no entrar en la 5060.
+
+### Paso 5 — GR00T N1.7 (el objetivo; alternativa: π₀.₅)
+
+> **2026-10-21:** es el objetivo de la escalera — no espera a SmolVLA (paso 4b). **π₀.₅**
+> (OpenPI) entra como alternativa **solo si GR00T no rinde**, comparado en la misma tarea y con
+> los mismos 20 intentos (`G1.md` §6.7 punto 7).
 
 - [ ] Subir a **~200 episodios** de la misma tarea (los docs: ~100 mínimo, 200+ para estable;
       NVIDIA usó 200 en su curso G1 y sacó 68 %).
 - [ ] Llevar el dataset al formato de GR00T: **LeRobot v2 + `meta/modality.json`**
-      (estado/acción 28-D = 14 brazos + 7+7 Dex3, video `ego_view` 640×480 H.264, no AV1).
+      (estado/acción **26-D = 14 brazos + 6+6 BrainCo** — decía 28-D con Dex3, viejo desde el
+      2026-10-15; video `ego_view` 640×480 H.264, no AV1).
 - [ ] Fine-tune `nvidia/GR00T-N1.7-3B`, `--embodiment-tag NEW_EMBODIMENT`, 1× GPU 80 GB,
       ~10k pasos. Separar episodios de validación.
 - [ ] **No creerle al MSE**: el issue #414 tuvo buen MSE offline con 600 episodios de G1 y casi
       cero éxito real. Lo único que vale es el robot.
 - [ ] Servir con `run_gr00t_server.py` (ZMQ :5555, con `api_token`) en el servidor GPU, con
       TensorRT. Cliente en PC2: lee cámara y estado, pide un trozo de acciones, ejecuta 8-16
-      pasos a 30 Hz mientras pide el siguiente, y escribe en `rt/arm_sdk` + `rt/dex3/*`.
+      pasos a 30 Hz mientras pide el siguiente, y **los manda por el relay** (`g1_joint_sender`,
+      con los límites de `joint_ctl_core.hpp`; las manos por Modbus). Decía "escribe en
+      `rt/arm_sdk` + `rt/dex3/*`": directo se saltearía los frenos, y desde 2026-10-21 la
+      ejecución va siempre detrás del relay (`G1.md` §6.7 punto 3). Falta en el relay la
+      operación de trayectoria (`G1.md` §6.8).
 - [ ] Los mismos 20 intentos del paso 4.
 - **Hecho cuando:** GR00T le gana a ACT en la misma tarea, medido.
 
