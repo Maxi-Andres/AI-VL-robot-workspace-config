@@ -200,7 +200,8 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
       (`systemd/robot-command-relay.g1.service`); hay que **reinstalar la unidad** en el G1.
       Probablemente los tirones de antes también eran en parte esto.
 - [ ] Poses guardadas (nombre → ángulos). STOP siempre visible (hoy: Release y el stop del
-      Drive).
+      Drive). **2026-10-21: entra en el próximo sprint** (`G1.md` §6.2): son las poses del primer
+      agarre (pre-agarre, agarre, levantar, sobre la caja), que `ReachPose` recorre sin IK.
 - **Para probar con el robot:** `git pull && ./build.sh && sudo systemctl restart
   robot-command-relay` en PC2 (nada más: los valores nuevos son los de por defecto) y `run.sh`
   acá. Primero movimientos chicos de cada articulación para confirmar el sentido; después uno
