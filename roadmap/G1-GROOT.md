@@ -180,11 +180,12 @@ demos, tarea "manzana al plato". Es lo más cerca de "un modelo que ya sabe" que
 ### Paso 1B — Simulación con demos generadas por código, sin casco
 
 - [ ] `unitree_sim_isaaclab` con G1-29 + Dex3 (tareas PickPlace-Cylinder, PickPlace-RedBlock,
-      Stack-RgyBlock). Pide Isaac Sim 5.x en RTX 50 y probado solo en 3080/3090/4090 — la 5060 de
+      Stack-RgyBlock). ⚠️ **2026-10-21: nuestras manos son BrainCo** — **a verificar** si el repo
+      trae G1 + BrainCo; si solo trae Dex3, la sim no sirve para las manos. Pide Isaac Sim 5.x en RTX 50 y probado solo en 3080/3090/4090 — la 5060 de
       8 GB casi seguro no alcanza (**a verificar** el mínimo de VRAM de Isaac Sim); va en la GPU
       del paso 1. **Nunca en el segmento del robot**: habla los mismos tópicos DDS.
 - [ ] Generar demos **sin humano**: un agarre programado (pose del objeto que da la sim →
-      cinemática inversa del brazo → acercar, cerrar la Dex3, levantar, llevar, soltar), con
+      cinemática inversa del brazo → acercar, cerrar la mano, levantar, llevar, soltar), con
       posiciones de objeto al azar, cientos de episodios. Alternativa: **Isaac Lab Mimic**, que
       multiplica unas pocas demos en cientos (pero esas pocas salen de algún lado: el agarre
       programado mismo sirve).
@@ -207,6 +208,12 @@ demos, tarea "manzana al plato". Es lo más cerca de "un modelo que ya sabe" que
     para brazos; los dedos van aparte y queda torpe.
   - **Cámara común siguiendo las manos** (MediaPipe → retargeting). Barato, calidad baja.
   - Joystick/teclado: demos lentas, y el modelo aprende esa lentitud. Última opción.
+  - **Demos del agarre programado en el robot real** (agregado 2026-10-21, `G1.md` §6.7 punto
+    8), apenas ande la fase 4 de `G1.md` §6.2: objeto en posiciones al azar, el agarre
+    determinístico intenta, se graba todo — **las fallas también, etiquetadas**. Es el 1B sin
+    Isaac Sim y con el robot de verdad. Límite: la política aprende los movimientos del agarre
+    programado, con sus mañas; para tareas que ese agarre no sabe hacer, sigue haciendo falta
+    una persona (casco o mano).
 - Si los dos dan casi cero en real → **comprar el casco** (§8, decisión 2) y seguir por el
   paso 2. Es lo que coincide en todo lo publicado para tareas reales en un entorno propio.
 - En los dos casos los datos de sim **se quedan**: se mezclan con los reales en el paso 5.
@@ -214,7 +221,12 @@ demos, tarea "manzana al plato". Es lo más cerca de "un modelo que ya sabe" que
 ### Paso 2 — Teleoperación con `xr_teleoperate` (si la puerta 1C lo pide)
 
 - [ ] `teleimager` en PC2 con la D435i (la soporta: extra `[realsense]`).
-- [ ] `xr_teleoperate --arm G1_29 --ee dex3 --motion`. **Dónde corre el programa es lo
+- [ ] `xr_teleoperate --arm G1_29 --ee brainco --motion` (decía `--ee dex3`; corregido
+      2026-10-21, `--ee brainco` existe según §2 — verificar el cruce de los dos motores del
+      pulgar, `G1-CONTROL-ARTICULAR.md` J4). ⚠️ `xr_teleoperate` escribe DDS directo al robot,
+      sin pasar por el relay: es una **excepción** a "ROS2 / planificación arriba, ejecución
+      detrás del relay" (`G1.md` §6.7 punto 3) — aceptable en una mesa de grabación
+      supervisada y cableada, a decidir cuando se llegue. **Dónde corre el programa es lo
       primero a resolver**: publica DDS al robot, y por WiFi el DDS **no cruza** (§6.5). O
       corre en PC2 (Python 3.10 en conda, aarch64 — a verificar) y el casco se conecta a PC2 por
       la WiFi de robots, o se graba con el robot **cableado** a la red del robot y una PC en ese
@@ -230,9 +242,13 @@ demos, tarea "manzana al plato". Es lo más cerca de "un modelo que ya sabe" que
 - [ ] Elegir **una** tarea angosta: robot parado frente a una mesa fija, "agarrá la taza y
       ponela en la caja". Misma mesa, misma luz, posiciones de la taza variadas.
 - [ ] `--record` → 50 episodios de ~20-30 s. Calcular ~1-1.5 h de grabación con los reseteos.
-- [ ] Convertir con `unitree_IL_lerobot` (`convert_unitree_json_to_lerobot.py --robot_type
-      Unitree_G1_Dex3`) y **revisar** con `replay_robot.py` / `eval_g1_dataset.py
+- [ ] Convertir con `unitree_IL_lerobot` (`convert_unitree_json_to_lerobot.py --robot_type`
+      **variante BrainCo** — decía `Unitree_G1_Dex3`; **a verificar** el nombre exacto y que el
+      conversor la tenga, Unitree publica datasets `G1_Brainco_*`) y **revisar** con `replay_robot.py` / `eval_g1_dataset.py
       --send_real_robot=false` antes de entrenar nada.
+- [ ] Del plan del 2026-10-21 (`G1.md` §6.7 punto 8): grabar también los intentos **fallidos,
+      etiquetados**; separar entrenamiento y prueba **por escena y por objeto** (no por
+      episodio al azar); **versionar** el dataset; **consentimiento** si se graba a alguien.
 - **Hecho cuando:** el replay de un episodio en el robot reproduce el movimiento grabado.
 
 ### Paso 4 — Línea base barata: ACT en esta PC
