@@ -180,7 +180,11 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
         `tools/gen_g1_arm_model.py`; coincide con lo medido: −5.5 vs −6.7 hombro, −2.35 vs −3.0
         codo, brazo derecho ±0.2). Test que falla con el freno viejo. **Falta probarlo con el
         robot** (deploy por `git pull` + `./build.sh` en PC2).
-- [ ] **Feedforward de gravedad** — pedido 2026-10-16, después de probar el freno nuevo. Mandar el
+- [ ] **Feedforward de gravedad** — **construido otra vez 2026-10-22** (relay `d8c3441`, regla 11 de
+      `joint_ctl_core.hpp`, 10 tests): torque de sostener el brazo en la pose COMANDADA, escalado
+      por el peso de la rampa, tope 50 % del torque nominal, `JOINT_CTL_FEEDFORWARD=0` lo apaga.
+      **Falta probarlo con el robot.** Lo que sigue es la historia del primer intento.
+      Pedido 2026-10-16, después de probar el freno nuevo. Mandar el
       torque de sostener el brazo (el mismo `arm_gravity()` del freno) en `motor_cmd.tau`, así el
       "resorte" (kp 60, ~1 N·m por grado) no tiene que estirarse: hoy, con el brazo adelante y el
       codo doblado, queda **~8° abajo** del destino (8.5 N·m de peso / 60). Sirve para precisión
@@ -198,6 +202,8 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
       congelado a ráfagas: temblor, y la lectura del FSM vencía. La misma trampa que ya tuvo el
       video (`robot-splunk-docs/PLAN-VIDEO.md`). Arreglo: `CPUWeight=100` en vez de la cuota
       (`systemd/robot-command-relay.g1.service`); hay que **reinstalar la unidad** en el G1.
+      ✅ **Ya instalada** (verificado 2026-10-22: `CPUWeight=100`, sin cuota, PC2 en `f796b1f`).
+      El primer intento de feedforward nunca se commiteó: se reescribió el 2026-10-22.
       Probablemente los tirones de antes también eran en parte esto.
 - [ ] Poses guardadas (nombre → ángulos). STOP siempre visible (hoy: Release y el stop del
       Drive). **2026-10-21: entra en el próximo sprint** (`G1.md` §6.2): son las poses del primer
