@@ -183,7 +183,12 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 - [ ] **Feedforward de gravedad** — **construido otra vez 2026-10-22** (relay `d8c3441`, regla 11 de
       `joint_ctl_core.hpp`, 10 tests): torque de sostener el brazo en la pose COMANDADA, escalado
       por el peso de la rampa, tope 50 % del torque nominal, `JOINT_CTL_FEEDFORWARD=0` lo apaga.
-      **Falta probarlo con el robot.** Lo que sigue es la historia del primer intento.
+      ✅ **Probado con el robot 2026-10-22:** desplegado por `git pull` + `./build.sh` en PC2 (sin
+      reiniciar el relay: cada "Take control" lanza el binario nuevo). Al levantar el brazo,
+      **queda justo sobre el fantasma azul** (el destino); antes quedaba ~8° abajo. O sea que
+      **`rt/arm_sdk` sí respeta `tau`** — el plan B (compensar en la posición) no hace falta.
+      Confirmación a ojo del usuario, sin medir los grados. Lo que sigue es la historia del
+      primer intento.
       Pedido 2026-10-16, después de probar el freno nuevo. Mandar el
       torque de sostener el brazo (el mismo `arm_gravity()` del freno) en `motor_cmd.tau`, así el
       "resorte" (kp 60, ~1 N·m por grado) no tiene que estirarse: hoy, con el brazo adelante y el
