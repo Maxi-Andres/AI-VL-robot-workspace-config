@@ -178,8 +178,12 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
         Arreglo: la regla 8 compara el torque **que sobra después de la gravedad**
         (`src/arm_gravity.hpp`, modelo del URDF con manos BrainCo generado por
         `tools/gen_g1_arm_model.py`; coincide con lo medido: −5.5 vs −6.7 hombro, −2.35 vs −3.0
-        codo, brazo derecho ±0.2). Test que falla con el freno viejo. **Falta probarlo con el
-        robot** (deploy por `git pull` + `./build.sh` en PC2).
+        codo, brazo derecho ±0.2). Test que falla con el freno viejo. ✅ **Probado con el robot
+        2026-10-22** (con el feedforward): frenado con la mano salta y suelta; levantar el brazo
+        solo no lo dispara. Arrastrar el deslizador contra el obstáculo lo hace empujar y frenar
+        otra vez con cada destino nuevo: decidido dejarlo así. Los avisos se listan arriba a la
+        izquierda del visor, con cuántas veces y hace cuánto (frontend `338c1f3`; el relay cuenta
+        los eventos con `event_seq`, `4a64140`).
 - [ ] **Feedforward de gravedad** — **construido otra vez 2026-10-22** (relay `d8c3441`, regla 11 de
       `joint_ctl_core.hpp`, 10 tests): torque de sostener el brazo en la pose COMANDADA, escalado
       por el peso de la rampa, tope 50 % del torque nominal, `JOINT_CTL_FEEDFORWARD=0` lo apaga.
