@@ -237,8 +237,9 @@ demos, tarea "manzana al plato". Es lo más cerca de "un modelo que ya sabe" que
 
 - [ ] `teleimager` en PC2 con la D435i (la soporta: extra `[realsense]`).
 - [ ] `xr_teleoperate --arm G1_29 --ee brainco --motion` (decía `--ee dex3`; corregido
-      2026-10-21, `--ee brainco` existe según §2 — verificar el cruce de los dos motores del
-      pulgar, `G1-CONTROL-ARTICULAR.md` J4). ⚠️ `xr_teleoperate` escribe DDS directo al robot,
+      2026-10-21, `--ee brainco` existe según §2). El orden del pulgar de BrainCo está
+      confirmado con el robot (2026-10-22, `G1-CONTROL-ARTICULAR.md` J4): si `xr_teleoperate`
+      cruza los dos motores, hay que corregirlo de su lado antes de grabar. ⚠️ `xr_teleoperate` escribe DDS directo al robot,
       sin pasar por el relay: es una **excepción** a "ROS2 / planificación arriba, ejecución
       detrás del relay" (`G1.md` §6.7 punto 3) — aceptable en una mesa de grabación
       supervisada y cableada, a decidir cuando se llegue. **Dónde corre el programa es lo

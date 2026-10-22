@@ -281,7 +281,10 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
         donde estaba al tomar el control (regla 10, durante la rampa de los brazos; una mano no
         tocada no recibe nada). Y un botón **Relax** por mano = la postura de encendido
         (pulgares 40 %, dedos 5 %).
-      Falta: confirmar flexión vs. rotación del pulgar.
+      ~~Falta: confirmar flexión vs. rotación del pulgar.~~ ✅ **2026-10-22, con el robot:** moviendo
+      solo "thumb flex", los dos pulgares se doblan hacia la palma. El orden de BrainCo (motor 0
+      flexión, motor 1 rotación) es el correcto, y es el que usa nuestro código; si el de Unitree
+      los cruza, el error es suyo.
 - [x] **Página, 2026-10-15:** un aviso largo (p. ej. "… pushed against something…") ensanchaba
       todo el panel y aparecía una barra horizontal: el panel es una grilla cuya columna crecía
       hasta el texto más largo, y los avisos no partían línea. Ahora la columna es fija y los
