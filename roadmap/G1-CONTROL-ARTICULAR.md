@@ -288,7 +288,29 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
       avisos de Joints parten línea (`StatusText wrap`). Y en el visor, arriba a la izquierda,
       **"Warm joints"**: cada articulación sobre la banda normal (≥ 55 °C) con su temperatura,
       la más caliente primero, en el color en que se pinta; clic la selecciona.
-- [ ] **¿Son Revo 2 *Touch* (táctiles)?** (2026-10-21, `G1.md` §6.7 punto 1.) Que son BrainCo
+- [x] **SÍ: son Revo 2 *Touch*, capacitivas — confirmado y probado con el robot 2026-10-22.**
+      Leído por Modbus desde PC2 (solo lecturas, con el mismo `flock` del puente; script de
+      un uso mandado por SSH, no copiado al robot). Registros de la página *Modbus / CAN FD
+      Touch* de BrainCo (brainco-hz.com/docs/revolimb-hand/en/revo2/modbus_touch.html):
+      - **970** (holding, fc 03) tipo de tacto: **1 = capacitivo en las dos manos** (0 sería sin
+        tacto, 2 piezorresistivo). Firmware (3000) **1.0.22.U** en las dos.
+      - **4000-4004** (holding) tacto prendido por dedo: los 10 en 1, de fábrica.
+      - **4200-4214** (input, fc 04) por dedo, pulgar → meñique: fuerza normal, tangencial
+        (0.01 N, 0-25 N) y dirección (0-359°, 0xFFFF = inválida). **4215-4224** proximidad
+        (32 bits). **4225-4229** estado: byte alto = secuencia, bit 0 crudo inválido, bit 1 sin
+        actualizar, bit 2 *trigger timeout*. Los contadores avanzan ~60-70 muestras/s por dedo.
+      - **Prueba de apretar (2026-10-22, el usuario en el robot):** los 10 dedos subieron de 0
+        al apretar y volvieron a 0 al soltar. Picos de fuerza normal — der.: pulgar 3.65, índice
+        6.96, medio 0.40, anular 3.33, meñique 5.72 N; izq.: 3.85, 1.44, 1.24, 1.74, 1.31 N.
+      - **El bit 2 (*trigger timeout*) se queda pegado** a veces: los dos dedos medios lo tenían
+        en la primera lectura, el derecho marcando 0.05 N fijos. **Se limpió solo al tocarlo**
+        y volvió a leer 0. Regla para el código: **un dedo con bit 0, 1 o 2 prendido no vale
+        como lectura**. No escribir 4005-4014 (reset y calibración) para "arreglarlo": la doc
+        pide hacerlo sin nada tocando y no hizo falta.
+      Lo que sigue (fuera de este ítem): leer 4200-4229 en `g1_joint_bridge` y mostrarlo en
+      Joints; usarlo para confirmar agarres (`G1.md` §6.9) y para "soltar con carga" (§4).
+      Texto original del pendiente, abajo:
+- ~~[ ] **¿Son Revo 2 *Touch* (táctiles)?** (2026-10-21, `G1.md` §6.7 punto 1.)~~ Que son BrainCo
       Revo 2 está confirmado por Modbus; que tengan yemas táctiles, **no**. El plan del
       2026-10-21 lo da por hecho y su Fase 1 confirma el agarre por tacto. El usuario lo busca
       en el robot (etiqueta / compra); la prueba por código es leer los registros táctiles de la
@@ -406,8 +428,8 @@ Lo que quedó en `joint_ctl_core.hpp` (J2), con sus valores por defecto; cada un
       alquilada): un bloque que llega tarde no se ejecuta.
 - [ ] **Soltar con carga:** hoy soltar baja los brazos en 2 s a la postura de PC1 y "Give arms
       back" devuelve las manos a su posición inicial (las abre) — **con un objeto en la mano,
-      lo deja caer.** Si los dedos están cerrados sobre algo (corriente alta o estado 2 =
-      trabado), congelar y avisar en vez de bajar; no abrir la mano; bajar recién con
+      lo deja caer.** Si los dedos están cerrados sobre algo (**fuerza en las yemas** —son
+      táctiles, J4, 2026-10-22—, con corriente alta o estado 2 = trabado de respaldo), congelar y avisar en vez de bajar; no abrir la mano; bajar recién con
       confirmación. Sin carga, como hoy.
 - El chequeo de colisiones **planificado** (antes de moverse) no va acá: es de la fase 4 de
   `G1.md` §6.2 (MoveIt 2 o IK propia). Acá queda el freno reactivo.
