@@ -194,7 +194,9 @@ seguridad documentada que ningún test ejercita**.
 Lo que estaba en `FIX.txt` como notas crudas, ordenado. `FIX.txt` sigue existiendo como
 libreta de ideas; lo que se decide hacer sube acá.
 
-- [ ] **Pasada completa de UI y UX de la app** (pedido 2026-10-20, para después). No un arreglo
+- [ ] **Pasada completa de UI y UX de la app** (pedido 2026-10-20, repetido 2026-10-22: "un
+      overhaul de todo el front"; para después). **La app se llama Silk Pilot** desde 2026-10-22
+      (frontend `c8233aa`: título "Silk Pilot", header = logo de Silk + "Pilot"). No un arreglo
       puntual: revisar las cinco pestañas (Live, Drive, Robot, Video, Joints) como un todo —
       jerarquía visual, densidad del header, consistencia de controles y estados, flujos que no
       se entienden. Absorbe a los ítems sueltos de UX de esta lista (vista de VLM, pill de
