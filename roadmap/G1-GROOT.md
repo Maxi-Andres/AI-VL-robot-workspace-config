@@ -337,6 +337,8 @@ los skills que ya existen.
       streaming (SSE o el WS existente), no al final.
 - [ ] El cerebro detrás: un LLM con herramientas (los skills del catálogo + "mirar la cámara"
       con la VLM + más adelante `manipulate`) que reemplaza al intérprete de un solo skill.
+      **2026-10-26 (usuario):** cuando esta pestaña exista, la sección "Robot command
+      (interpreter)" se saca de Live; hasta entonces se queda.
       **2026-10-21: sus herramientas son las acciones de `G1.md` §6.9** (objetivo → progreso →
       resultado éxito/incierto/fallo, con cancelación y timeout propios), no los skills de
       disparo: para encadenar agarrar → llevar → soltar tiene que saber si el paso anterior

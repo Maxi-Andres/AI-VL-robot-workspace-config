@@ -243,6 +243,11 @@ Todo lo que **no** necesita robot está en §7 y §8, y es lo que conviene hacer
 | **Dónde vive la percepción del Go2** (dueña de la RealSense, YOLO, seguimiento): repo nuevo `robot-perception` vs dentro de `robot-video-pipeline` | abierta — propuesta: repo nuevo | `roadmap/GO2-SEGUIME.md` §4 |
 | **Audio del Go2: el del robot vs speakerphone USB** | abierta — la decide la fase A0 | `roadmap/GO2-AUDIO.md` D1-D2 |
 | **"Seguime": correa con la app** — sin señal de la app cada ~3 s, el robot se frena | abierta — propuesta: sí, 3 s | `roadmap/GO2-SEGUIME.md` D8 |
+| **Usuarios y login de Silk Pilot** | ✅ cerrada 2026-10-26 — servidor propio por cliente (asistente de primer arranque, sin registro público; modelo listo para multi-empresa), login propio en el backend con **sesiones del lado del servidor** en cookie httpOnly (no JWT access/refresh), SQLite vía SQLAlchemy + Alembic, invitaciones por enlace (mail después) | `roadmap/PLATAFORMA.md` §7.5 "Usuarios, roles y login" |
+| **Entrega del producto** | ✅ cerrada 2026-10-26 — instalador + imágenes Docker (nunca clonar el repo), Linux; código compilado con Nuitka (PyArmor si rompe). **Sigue abierto:** vender la caja armada (appliance) | `roadmap/PLATAFORMA.md` §7.5 "Producto: cómo se entrega" |
+| **Licencias** | propuesta 2026-10-26, a confirmar — archivo firmado por Silk, por tiempo y con límites, activación de un solo uso atada a la máquina | ídem |
+| **Instalación del software en los robots** | abierta — propuesta: agente de robot que se enrola desde "Add robot"; mientras tanto, la instala Silk | ídem |
+| **Versiones y actualizaciones** | propuesta 2026-10-26 — release = tag en `AI-VL-ecosystem` con manifiesto firmado; CI arma y firma imágenes y paquetes de robot; el servidor avisa en la app y actualiza con respaldo y vuelta atrás; robots solo quietos | ídem |
 
 Sobre el transporte, un matiz que hay que tener presente: `ROBOT_CONTROL.md` fase 2 pide
 construir el ejecutor **abstraído del transporte** *"para que ROS2/Nav2 pueda entrar después"*,
