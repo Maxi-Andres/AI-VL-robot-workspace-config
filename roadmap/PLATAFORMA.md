@@ -382,7 +382,28 @@ libreta de ideas; lo que se decide hacer sube acá.
   - [ ] **Misiones en Fleet** (anotado 2026-10-27): la cuarta tarjeta de arriba de Fleet era
         "Live video: Off" y no tenía sentido; ahora es "Services up". Cuando existan las
         misiones, ese lugar es para ellas (y el "New mission" del maquetado).
-  - [ ] **Fase 4 — empresarial**: SSO por OIDC (Microsoft/Google), segundo factor TOTP,
+  - [x] **SSO por OIDC — construido 2026-10-27** (`sso.py`, migración 0010, Settings → Single
+        sign-on): Microsoft Entra, Google u otro OIDC; código + PKCE, state en cookie Lax y por el
+        proveedor, firma del id_token contra las claves publicadas. Decidido con el usuario: OIDC
+        (no SAML como Splunk), **entran solo los invitados** (cuenta ya vinculada → mail →
+        invitación pendiente), la **contraseña queda** como entrada de emergencia. Tenant
+        `common` rechazado. Probado con un proveedor falso que firma RS256 (12 tests + Firefox de
+        punta a punta), **no con Entra real**. **Falta para usarlo de verdad:**
+        1. Registrar la app en Entra (alguien con permiso de admin del tenant; Splunk ya tiene una
+           registrada, la misma persona sabe hacerlo): redirect URI Web, client ID, tenant, secreto.
+        2. **Un nombre para Pilot**: Entra acepta https en cualquier lado y http solo en localhost.
+           Hoy se entra por `https://<ip>:8443` con certificado propio. El mismo esquema que Splunk
+           (medido 2026-10-27): DNS de silk-technologies.com en **GoDaddy** (`ns63/64.domaincontrol.com`;
+           el usuario no recuerda la cuenta — la tiene quien creó `splunk.` el 26/10), registro A
+           `splunk` → **201.216.197.132** (nginx de la oficina), certificado **Let's Encrypt**
+           (emitido 26/10 22:50, renueva certbot). Para Pilot: registro A `pilot` → la misma IP, un
+           `server` en ese nginx hacia `https://192.168.20.99:8443` **con Upgrade/Connection para
+           los WebSockets** (video, detección, joints), `certbot --nginx -d pilot.silk-technologies.com`,
+           y Pilot con esa dirección como pública (Team, al invitar).
+        3. **Antes de publicarlo a internet**: Pilot mueve robots. Hoy solo el login cuida la
+           puerta del navegador, e iacore/executor/mediamtx siguen sin credencial en la LAN
+           (ver "Queda abierto aparte"). Decidir si se publica a internet o solo por VPN/Tailscale.
+  - [ ] **Fase 4 — empresarial (resto)**: segundo factor TOTP,
         recuperación de contraseña por mail, sesiones activas con "cerrar en todos lados",
         visor del registro de auditoría.
   - [ ] **Queda abierto aparte**: iacore (`:8001`), el executor y mediamtx siguen sin
