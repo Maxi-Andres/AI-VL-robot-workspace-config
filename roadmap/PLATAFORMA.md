@@ -382,6 +382,23 @@ libreta de ideas; lo que se decide hacer sube acá.
       `docs/G1_FASES_Y_CREAR_SKILLS.md`. Si algo suyo todavía vale, sube a §6; si no, se borra
       y git lo recuerda.
 - [ ] Sacar las 14 menciones de `192.168.123.99` de los docs (§3).
+- [ ] **Margen de VRAM en la PC de la app — anotado 2026-10-27, NO tocar todavía (decisión del
+      usuario).** La pantalla completa nativa de Pilot congela **todo** Firefox cuando la GPU se
+      queda sin memoria: cada congelamiento de ese día fue una ráfaga `NVRM ... Out of memory
+      [NV_ERR_NO_MEMORY]` en `journalctl -k` (12:10, 12:14, 12:40), y ninguna en otro momento.
+      Al cambiar a pantalla completa (o volver) el escritorio pide una superficie nueva del tamaño
+      de la pantalla y no hay lugar. Reparto medido (8 GB): llama-server 4.4 GB (Qwen3-VL-4B
+      Q4_K_M + mmproj F16, `-c 4096`), iacore 1.7 GB con yolo11x a 960 px (0.5 GB recién
+      arrancado, sin YOLO), escritorio + VS Code + Warp + Firefox ~1.1 GB → 7.5 GB. La página no
+      puede liberar memoria de otros procesos, así que el arreglo es dejar margen fijo. Opciones,
+      de menor a mayor cambio, **sin medir cuánto libera cada una**: (1) que iacore suelte YOLO
+      cuando nadie detecta, (2) un YOLO más chico por defecto (11s/11m), (3) achicar el VLM.
+      Mientras tanto la pantalla completa nativa queda **prendida a propósito**
+      (`AI-VL-frontend/src/lib/screen.ts`); si molesta, sacar `enterScreen()` de los que la llaman
+      y queda solo la expansión dentro de la página, que no pide VRAM. Diagnóstico ante cualquier
+      congelamiento del navegador en esa PC: `journalctl -k | grep NV_ERR_NO_MEMORY` y
+      `nvidia-smi` primero.
+
 
 ---
 ## 8. Track D — plataforma
