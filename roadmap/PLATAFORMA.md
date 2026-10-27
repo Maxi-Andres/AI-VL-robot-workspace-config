@@ -400,7 +400,15 @@ libreta de ideas; lo que se decide hacer sube acá.
            `server` en ese nginx hacia `https://192.168.20.99:8443` **con Upgrade/Connection para
            los WebSockets** (video, detección, joints), `certbot --nginx -d pilot.silk-technologies.com`,
            y Pilot con esa dirección como pública (Team, al invitar).
-        3. **Antes de publicarlo a internet**: Pilot mueve robots. Hoy solo el login cuida la
+        **2026-10-27, decidido: se publica a internet** (el jefe lo quiere así). Hecho ese día:
+        registro A `pilot` → 201.216.197.132 creado en GoDaddy; guía completa del nginx y del
+        lado de Pilot en `AI-VL-ecosystem/docs/PUBLIC_ACCESS.md`; endurecido: `/docs` y
+        `/openapi.json` eran públicos (sacados), test que llama TODAS las rutas sin credencial,
+        CSP/HSTS/headers, `TRUSTED_PROXIES` (en `~/.pilot/pilot.env`), con SSO la contraseña solo
+        desde la red de la empresa. **Falta:** el server block del nginx + certbot (quien lo
+        administra), `TRUSTED_PROXIES`, la dirección pública en Pilot, el registro en Entra, y
+        corregir el mail del owner (`silk-techonogies.com`, con `pilot_admin.py set-email`).
+        3. **Antes de publicarlo a internet** (lo que sigue abierto): Pilot mueve robots. Hoy solo el login cuida la
            puerta del navegador, e iacore/executor/mediamtx siguen sin credencial en la LAN
            (ver "Queda abierto aparte"). Decidir si se publica a internet o solo por VPN/Tailscale.
   - [ ] **Fase 4 — empresarial (resto)**: segundo factor TOTP,
