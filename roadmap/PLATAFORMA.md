@@ -585,7 +585,12 @@ libreta de ideas; lo que se decide hacer sube acá.
       no entra.
       1. **Buscar en internet** — **hecho 2026-10-28** (`search_common.py`, SearXNG en
          `deploy/searxng`, 127.0.0.1:8095): dólar blue $1.550 con fuente, lluvia 28 % con fuente,
-         ~1-2 s más solo en las preguntas que buscan. Plan original: SearXNG local en docker (sin clave, sin cuota; Brave o Tavily
+         ~1-2 s más solo en las preguntas que buscan. Cuándo buscar: pedido explícito ("buscá",
+         "search") → sí; señala lo que se ve ("el cartel", "esto") → no; el resto lo decide el
+         propio llama-server con una pregunta de texto (medido: 42/42 sobre preguntas mezcladas,
+         ~26 ms); sin modelo, palabras clave en español e inglés. Para fechas, resultados y
+         cifras lee las 3 primeras páginas (River: "1 de Nov. Boca v River 3:00 PM" de ESPN). Las
+         preguntas de internet van sin la imagen. Plan original: SearXNG local en docker (sin clave, sin cuota; Brave o Tavily
          solo si SearXNG no alcanza). `search_common.py`: se busca solo con "buscá",
          "averiguá", "en internet", noticias, clima, precios, "quién es/qué es" + algo que no
          está en la imagen; 3-5 fragmentos con fecha y fuente van como dato; la respuesta dice
