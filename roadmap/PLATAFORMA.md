@@ -420,6 +420,10 @@ libreta de ideas; lo que se decide hacer sube acá.
         (c) Microsoft se matchea por `preferred_username` (UPN, dominio verificado), nunca por
         `email` (atributo mail, sin verificar: "nOAuth"). (d) El executor rechaza una URL de
         relay con saltos de línea (escribía claves arbitrarias en su `.env`).
+        También ese día: el H.264/WebRTC negocia por Pilot (`/api/whep/{robot}`), se acabó el
+        "Open this once and accept the certificate"; desde internet sigue cayendo a intra
+        hasta que mediamtx anuncie la IP pública + UDP 8189 en el Meraki. Las miniaturas de
+        Fleet salen de Frigate, una por robot (antes solo el último abierto, el del bridge).
         **Abierto, fuera de Pilot:** el **puerto 22 de 201.216.197.132 llega por SSH a
         ticktera** (misma clave de host que 192.168.12.102) **y acepta contraseña** — es la
         máquina que publica Pilot, Splunk y Zammad. Sacar el reenvío del 22 en el Meraki (o al
