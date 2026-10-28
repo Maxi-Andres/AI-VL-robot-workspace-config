@@ -422,7 +422,8 @@ libreta de ideas; lo que se decide hacer sube acá.
         relay con saltos de línea (escribía claves arbitrarias en su `.env`).
         También ese día: el H.264/WebRTC negocia por Pilot (`/api/whep/{robot}`), se acabó el
         "Open this once and accept the certificate"; desde internet sigue cayendo a intra
-        hasta que mediamtx anuncie la IP pública + UDP 8189 en el Meraki. Las miniaturas de
+        hasta que el Meraki reenvíe UDP+TCP 8189 a 192.168.20.99 (mediamtx ya anuncia
+        201.216.197.132, hecho 2026-10-28). Las miniaturas de
         Fleet salen de Frigate, una por robot (antes solo el último abierto, el del bridge).
         **Abierto, fuera de Pilot:** el **puerto 22 de 201.216.197.132 llega por SSH a
         ticktera** (misma clave de host que 192.168.12.102) **y acepta contraseña** — es la
