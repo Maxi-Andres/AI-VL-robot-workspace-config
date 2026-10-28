@@ -583,7 +583,9 @@ libreta de ideas; lo que se decide hacer sube acá.
       agrega al prompt si la pregunta no lo pide (lo medido: cada frase de más rompe lecturas).
       Antes y después de cada pieza, correr `src/vlm_reading_check.py` (ver abajo) — si baja,
       no entra.
-      1. **Buscar en internet.** SearXNG local en docker (sin clave, sin cuota; Brave o Tavily
+      1. **Buscar en internet** — **hecho 2026-10-28** (`search_common.py`, SearXNG en
+         `deploy/searxng`, 127.0.0.1:8095): dólar blue $1.550 con fuente, lluvia 28 % con fuente,
+         ~1-2 s más solo en las preguntas que buscan. Plan original: SearXNG local en docker (sin clave, sin cuota; Brave o Tavily
          solo si SearXNG no alcanza). `search_common.py`: se busca solo con "buscá",
          "averiguá", "en internet", noticias, clima, precios, "quién es/qué es" + algo que no
          está en la imagen; 3-5 fragmentos con fecha y fuente van como dato; la respuesta dice
@@ -614,7 +616,14 @@ libreta de ideas; lo que se decide hacer sube acá.
       conversación se guarda (`chats.py`) solo para mostrarla. "¿Y la pared?" funciona porque
       vuelve a mirar, no porque se acuerde. La idea del usuario: "que sea como hablar con
       cualquier LLM". Lo que falta:
-      1. **Contexto de la conversación**: cada pregunta lleva los turnos anteriores (texto y,
+      1. **Contexto de la conversación** — **hecho en texto 2026-10-28** con el 4B y la ventana
+         de 4096: la conversación abierta va con cada pregunta (`history`), los turnos más
+         nuevos que entran en 5000 caracteres (`vlm_common.history_messages`); probado: "¿de qué
+         color es?" y "lo que dijiste primero" las entiende, primera palabra 0.7 s igual que
+         sin contexto. Falta: las imágenes de turnos viejos y ventanas más grandes (GPU nueva);
+         la búsqueda web todavía arma la consulta solo con la pregunta actual ("cuánto cuesta
+         uno" buscó eso literal). Para probar con más ventana: `VLM_MODEL=…2B… VLM_MMPROJ=…
+         VLM_CTX=8192 ./linux/run.sh`. Lo que quedaba: cada pregunta lleva los turnos anteriores (texto y,
          donde sirva, las imágenes de esos turnos), con un tope por tokens. Es lo que encarece:
          más prefill por respuesta y más memoria de GPU para el contexto (hoy la 5060 de 8 GB
          está justa: VLM 4.4 + iacore 1.7, ver §7.6). Medir segundos hasta la primera palabra
