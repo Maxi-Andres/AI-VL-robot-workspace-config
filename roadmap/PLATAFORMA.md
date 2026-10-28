@@ -408,6 +408,25 @@ libreta de ideas; lo que se decide hacer sube acá.
         desde la red de la empresa. **Falta:** el server block del nginx + certbot (quien lo
         administra), `TRUSTED_PROXIES`, la dirección pública en Pilot, el registro en Entra, y
         corregir el mail del owner (`silk-techonogies.com`, con `pilot_admin.py set-email`).
+        **2026-10-28, revisión de seguridad con Pilot ya en internet** (pruebas desde afuera +
+        auditoría del código). Desde afuera, bien: todo 401 sin sesión, WebSockets 403, rate
+        limit del nginx corta en el 11.º pedido, TLS 1.2/1.3, headers, la IP del cliente real
+        llega (181.47.17.238 desde casa; la oficina por hairpin se ve como 192.168.12.1).
+        Arreglado ese día: **(a) CRÍTICO** — `GET /api/classes?model=` (permiso `view`) y el
+        `model` del hub llegaban crudos a ultralytics, que baja cualquier `https://`/`gs://` y
+        abre el `.pt` con pickle → ejecución de código en esta PC para cualquier invitado; ahora
+        iacore acepta solo los nombres que lista `/options` (`_yolo_model`). (b) Cambiar la
+        dirección pública pasó de admin a owner (`manage_org`): el SSO manda a todos ahí.
+        (c) Microsoft se matchea por `preferred_username` (UPN, dominio verificado), nunca por
+        `email` (atributo mail, sin verificar: "nOAuth"). (d) El executor rechaza una URL de
+        relay con saltos de línea (escribía claves arbitrarias en su `.env`).
+        **Abierto, fuera de Pilot:** el **puerto 22 de 201.216.197.132 llega por SSH a
+        ticktera** (misma clave de host que 192.168.12.102) **y acepta contraseña** — es la
+        máquina que publica Pilot, Splunk y Zammad. Sacar el reenvío del 22 en el Meraki (o al
+        menos `PasswordAuthentication no` + llaves). La clave de `maxi` pasó por un chat: cambiarla.
+        Menores sin tocar: auditoría sin tope (filas por intentos fallidos), `imgsz`/`num_ctx`
+        sin límite para operadores, `CORS_ORIGINS=*` en `run.sh` (inofensivo sin credenciales,
+        innecesario en un solo origen), iacore sigue en `0.0.0.0` sin credencial en la LAN.
         3. **Antes de publicarlo a internet** (lo que sigue abierto): Pilot mueve robots. Hoy solo el login cuida la
            puerta del navegador, e iacore/executor/mediamtx siguen sin credencial en la LAN
            (ver "Queda abierto aparte"). Decidir si se publica a internet o solo por VPN/Tailscale.
