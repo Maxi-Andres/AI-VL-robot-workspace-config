@@ -608,6 +608,28 @@ libreta de ideas; lo que se decide hacer sube acá.
          intérprete (`command_common.interpret`, la pestaña Robot command); falta que un
          "command" del oído vaya ahí además de al VLM, con Safe mode y la lista de skills
          permitidas; "estás en el medio" → correrse.
+- [ ] **El asistente como un LLM de verdad — para cuando haya una GPU mejor (pedido 2026-10-28).**
+      Hoy **cada pregunta va sola** (verificado 2026-10-28): a `/api/vlm/stream` le llegan el
+      cuadro actual, la pregunta y la identidad (`VlmStreamRequest`: image, prompt, robot); la
+      conversación se guarda (`chats.py`) solo para mostrarla. "¿Y la pared?" funciona porque
+      vuelve a mirar, no porque se acuerde. La idea del usuario: "que sea como hablar con
+      cualquier LLM". Lo que falta:
+      1. **Contexto de la conversación**: cada pregunta lleva los turnos anteriores (texto y,
+         donde sirva, las imágenes de esos turnos), con un tope por tokens. Es lo que encarece:
+         más prefill por respuesta y más memoria de GPU para el contexto (hoy la 5060 de 8 GB
+         está justa: VLM 4.4 + iacore 1.7, ver §7.6). Medir segundos hasta la primera palabra
+         con 0 / 4 / 10 turnos.
+      2. **Pasarle fotos**: adjuntar una imagen propia (subida o del celular) además del cuadro
+         de la cámara, y preguntar sobre ella.
+      3. **Memoria fuera de las conversaciones**: una base de datos propia, no el chat.
+         "Guardá que…" / "acordate de…" guarda; "¿te acordás de…?" busca y entra como dato.
+         Es la pieza **2c** de "Bender útil" (arriba), ahora pedida también desde el chat de la
+         app y no solo por voz.
+      4. **Reconocer personas**: mostrarle la foto de alguien con su nombre y que después lo
+         reconozca al verlo. Es la pieza **3** de "Bender útil" (YuNet + SFace, local, con
+         consentimiento y botón para borrar).
+      Orden sugerido: 3 y 4 no necesitan la GPU nueva (la memoria es SQLite, las caras corren
+      en CPU); 1 y 2 sí, por el contexto.
 - [ ] **Prueba de lectura del VLM** — `AI-VL-core/src/vlm_reading_check.py` (2026-10-19): 57
       preguntas con respuesta conocida sobre las 33 fotos de `fotos/` (las 9 de equipos y 3
       escenas de Descargas ahora están ahí: `clean/23-31`, `scenes/`), por la misma función que
