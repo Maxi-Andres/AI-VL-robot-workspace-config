@@ -262,6 +262,26 @@ Falta pasarlo al repo.
   para medir la velocidad A40 vs H100. Luego el seco: el open-loop sobre episodios no vistos y
   los cuadros de nuestro robot.
 
+## 6e. Primer GR00T entrenado y en seco con nuestro robot (2026-10-30, noche)
+
+- **Entrenamiento corto:** 1000 pasos × 16 en la A40, 27 min. El checkpoint ocupa 24 GB:
+  **13 GB son `optimizer.pt`**, que llenó el volumen. Se borra: para usar el modelo o seguir
+  desde él alcanzan los pesos (12.6 GB). Queda `/workspace/runs/try1k/checkpoint-1000`.
+- **Open-loop** (episodios 0, 100 y 200, vistos en el entrenamiento): MAE 0.27, MSE 0.12.
+  `plots.png`: **la forma del movimiento la sigue** (el brazo derecho, el que agarra, va como el
+  del operador), **pero con un ruido enorme paso a paso** (±0.5 rad entre pasos de 33 ms). El
+  brazo izquierdo, quieto en los datos, sale todo ruido. **Le falta entrenamiento.**
+- **Seco con nuestro robot** (`groot_dry.py` en el scratchpad: cuadro por RTSP `g1`, estado
+  del executor, ZMQ por túnel SSH; NO manda nada):
+  - **funciona de punta a punta, 0.56-0.75 s por llamada** (2 s la primera);
+  - lo que propone es el mismo ruido: entre tres llamadas iguales difiere 0.42 rad.
+  - Diferencias de escena: nuestra cámara no ve las manos; la del dataset mira más abajo y las
+    ve.
+- **Siguiente:**
+  - entrenar más largo (5-10 k pasos: $1.2-4.7 en A40);
+  - **separar episodios de validación** que no entren al entrenamiento;
+  - controlar el espacio: `--save-total-limit 1` y borrar `optimizer.pt` al terminar.
+
 ## 7. Orden de trabajo
 
 1. [ ] **Cuenta:** confirmar dónde está el crédito; si es del jefe, armar el equipo + rol dev +
