@@ -178,6 +178,26 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 >   tiene que ser el del driver o el bobinado.
 > - **El par es el peso del brazo**: no empuja de más.
 >
+> **✅ Comparado con el controlador de Unitree (2026-10-30, mismo día).** El gesto
+> `right_hand_up`, mandado por el executor, sostuvo el hombro derecho a **4.2 N·m: 53 → 59 °C
+> en 20 s (~0.3 °C/s)**, y lo bajó solo a los 22 s.
+>
+> | Quién lo sostiene | Par | Sube |
+> |---|---|---|
+> | Unitree (gesto) | 4.2 N·m | 0.3 °C/s |
+> | Nosotros, medio levantado | 6.2 N·m | 0.67 °C/s |
+> | Nosotros, brazo arriba | 7.7 N·m | 1.0 °C/s |
+>
+> - **En los tres casos el calentamiento sigue al cuadrado del par: dT/dt ≈ 0.017 · τ²**. Es
+>   el I²R del bobinado. **Nuestro control no calienta de más: es la carga.**
+> - Las demás articulaciones siguen la misma regla, pero cargan ≤3 N·m (≤0.15 °C/s) y se
+>   quedan en 47-57 °C.
+> - **Presupuesto para sostener**, desde ~55 °C y con el freno en 75 °C: brazo extendido
+>   adelante (~8 N·m) ~20 s; codo doblado y brazo cerca del cuerpo (~4 N·m) ~75 s. **Las poses
+>   guardadas del agarre se diseñan con el brazo cerca del cuerpo.**
+> - **Queda:** saber si 75 °C sobre ese sensor rápido es demasiado conservador (¿a cuánto
+>   protege Unitree?) y separar los dos sensores en el relay.
+
 > **Siguiente:**
 > 1. la misma pose con `JOINT_CTL_FEEDFORWARD=0`;
 > 2. que el **controlador de Unitree** sostenga el brazo arriba (un gesto propio) y comparar el
