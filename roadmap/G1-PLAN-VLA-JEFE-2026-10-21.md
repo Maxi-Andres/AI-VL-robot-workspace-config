@@ -1,5 +1,8 @@
 # Roadmap técnico — Unitree G1 EDU: VLM/VLA, navegación y manipulación
 
+> **2026-10-30 — superado en parte.** El usuario aclaró que este plan es viejo y que lo combinaron con el jefe. En particular, **ya no rige** "no enviar control articular en lazo cerrado desde la nube": GR00T se sirve desde RunPod (`GPU-NUBE.md`). No citar sus reglas como bloqueo.
+
+
 **Versión:** 1.0  
 **Fecha:** 21 de octubre de 2026  
 **Objetivo:** convertir el Unitree G1 EDU en un robot capaz de comprender órdenes, localizar objetos, desplazarse hasta ellos, manipularlos con las manos BrainCo Revo 2 Touch, transportarlos, depositarlos y verificar el resultado.

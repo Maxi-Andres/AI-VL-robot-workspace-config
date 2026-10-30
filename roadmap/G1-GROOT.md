@@ -124,6 +124,8 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 
 ### Paso 1 — La GPU (indispensable; el casco NO va acá)
 
+> **2026-10-30: se alquila en RunPod.** Cómo se usa (volumen, apagado solo, Tailscale, datacenter, presupuesto de latencia): **`GPU-NUBE.md`**.
+
 - [ ] GPU de inferencia (§3.2), o arrancar alquilando. Sin ella no se prueba ni el modelo ya
       entrenado (1A) ni la simulación (1B).
 
