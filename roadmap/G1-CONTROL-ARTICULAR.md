@@ -161,6 +161,33 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 > de error (`:158-160`), y con kp 60 eso deja 7.5 N·m fijos en las de 25 N·m (las muñecas de
 > 5 N·m, hasta 60 %); (3) el dead-man congela el comando, no la posición medida (`:340`).
 > Física: el hombro con el brazo arriba midió 6.7-8.5 N·m (27-34 % del nominal) constante.
+> **✅ Primera medición 2026-10-30** (stream de 30 Hz del executor, los 14 motores de brazo;
+> crudo en el scratchpad de la sesión, `arm_heat_*.jsonl`). **El que calienta es el hombro
+> derecho (pitch); el resto queda en 47-54 °C:**
+>
+> | Pose del brazo derecho | Par | Temperatura |
+> |---|---|---|
+> | En reposo (pose de PC1) | 0.8 N·m | baja ~1 °C/s |
+> | Medio levantado (−0.6 rad) | 6.2 N·m | sube ~0.7 °C/s |
+> | Levantado (−1.03 rad) | 7.7 N·m | sube ~1 °C/s: 57 → 74 °C en 18 s |
+>
+> - **El freno de 75 °C lo suelta a los ~20 s**, en las dos pruebas. Funciona como está
+>   diseñado.
+> - **Ese sensor sube y baja ~1 °C/s**: es demasiado rápido para la carcasa de un motor.
+>   Leemos `max(temperature[0], temperature[1])` (`g1_joint_bridge.cpp:101`), y el que manda
+>   tiene que ser el del driver o el bobinado.
+> - **El par es el peso del brazo**: no empuja de más.
+>
+> **Siguiente:**
+> 1. la misma pose con `JOINT_CTL_FEEDFORWARD=0`;
+> 2. que el **controlador de Unitree** sostenga el brazo arriba (un gesto propio) y comparar el
+>    mismo sensor;
+> 3. mandar los **dos sensores por separado** (cambio chico en el relay, va por `git pull` +
+>    build en PC2).
+>
+> Con eso se decide el límite (¿75 °C sobre el sensor rápido es demasiado conservador?) y el
+> presupuesto de tiempo para sostener una pose en un agarre.
+
 > **Medición pendiente, con el robot levantado:** misma pose 5 min, `JOINT_CTL_FEEDFORWARD=1`
 > vs `0` y brazo suelto, registrando q, comando, `tau_est` y temperatura de 15-28 del stream de
 > 30 Hz. Propuestas después de medir: presupuesto de tiempo/temperatura al sostener (aviso ~60 °C),
