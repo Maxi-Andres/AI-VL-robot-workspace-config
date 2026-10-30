@@ -389,8 +389,12 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
         y volvió a leer 0. Regla para el código: **un dedo con bit 0, 1 o 2 prendido no vale
         como lectura**. No escribir 4005-4014 (reset y calibración) para "arreglarlo": la doc
         pide hacerlo sin nada tocando y no hizo falta.
-      Lo que sigue (fuera de este ítem): leer 4200-4229 en `g1_joint_bridge` y mostrarlo en
-      Joints; usarlo para confirmar agarres (`G1.md` §6.9) y para "soltar con carga" (§4).
+      ✅ **2026-10-30: leído en `g1_joint_bridge` y mostrado en Joints** (relay `f8f756b`,
+      frontend `bfc4306`): panel "Tacto de los dedos" con las dos manos (5 yemas, barra de
+      0-10 N, verde desde 0.5 N) y una fila "Fuerza en la yema" en el detalle del dedo. Un
+      dedo con los bits 0-2 de estado prendidos sale como "sin lectura". **Probado por el
+      usuario con el robot.** Falta: usarlo para confirmar agarres (`G1.md` §6.9) y para
+      "soltar con carga" (§4).
       Texto original del pendiente, abajo:
 - ~~[ ] **¿Son Revo 2 *Touch* (táctiles)?** (2026-10-21, `G1.md` §6.7 punto 1.)~~ Que son BrainCo
       Revo 2 está confirmado por Modbus; que tengan yemas táctiles, **no**. El plan del
