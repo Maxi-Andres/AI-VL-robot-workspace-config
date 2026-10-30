@@ -149,7 +149,24 @@ Cada paso tiene **cómo se sabe que está hecho**. No se pasa al siguiente sin e
 - **Hecho cuando:** el codo se mueve 20° y vuelve, con PC1 equilibrando, y al cerrar la sesión el
   brazo vuelve solo a la pose de PC1 sin tirón.
 
-### J3 — Los dos brazos y la cintura — construido 2026-10-15, falta probar con el robot
+### J3 — Los dos brazos y la cintura — construido 2026-10-15, **probado por el usuario 2026-10-28 ("funciona")**
+
+> **Calor al levantar el brazo (usuario 2026-10-28) — revisado el código, sin medir todavía.**
+> No hay un error que caliente de más en el aire: en una pose quieta el par lo fija la gravedad
+> (kp/kd 60/1.5, igual que el ejemplo `g1_arm7_sdk_dds_example.cpp`; el feedforward reparte
+> el mismo par, no lo suma). Lo que SÍ pone el código: (1) **sostener sin límite** — el
+> keepalive de 250 ms (`useJointControl.ts:60`) mantiene la pose mientras la página esté
+> abierta, y el único freno térmico es soltar a 75 °C (`joint_ctl_core.hpp:161`); (2) **una
+> articulación trabada empuja sin que salte el freno de empuje** — pide 30 % del par **y** 0.05 rad
+> de error (`:158-160`), y con kp 60 eso deja 7.5 N·m fijos en las de 25 N·m (las muñecas de
+> 5 N·m, hasta 60 %); (3) el dead-man congela el comando, no la posición medida (`:340`).
+> Física: el hombro con el brazo arriba midió 6.7-8.5 N·m (27-34 % del nominal) constante.
+> **Medición pendiente, con el robot levantado:** misma pose 5 min, `JOINT_CTL_FEEDFORWARD=1`
+> vs `0` y brazo suelto, registrando q, comando, `tau_est` y temperatura de 15-28 del stream de
+> 30 Hz. Propuestas después de medir: presupuesto de tiempo/temperatura al sostener (aviso ~60 °C),
+> kp por articulación (muñecas 20-40), freno de empuje coherente con kp, dead-man en la posición
+> medida, y comprobar los límites del URDF contra los topes reales.
+
 - [x] Las 15 articulaciones de §1 por `arm_sdk` (7 + 7 del brazo + cintura yaw), con **todo el
       rango del URDF** (menos 0.05 rad): el usuario pidió sacar el tope de ±34° de J2
       (`JOINT_CTL_EXCURSION` sigue existiendo, ahora 0 = apagado). Como un brazo con todo el

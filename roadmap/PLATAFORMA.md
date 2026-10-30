@@ -32,6 +32,10 @@
 
 ### 7.1. P0 de seguridad — reverificados línea por línea el 2026-09-10
 
+> **Usuario 2026-10-28:** la capa de comandos "va a volar" (se reemplaza), así que estos no se
+> hacen ahora; `SAFE_MODE` "ya está bien" (lo fija el entorno; el default del código sigue en
+> `False`, `robot_executor_service.py:113`, verificado ese día).
+
 **Los cuatro de seguridad siguen abiertos.** Los **dos del `RelayTransport`** que salieron de
 los xfails de §7.3 quedaron **arreglados el 2026-09-10**. Las referencias de línea de
 `robot_executor_service.py` corrieron una posición desde el 28-08 y están corregidas acá; las
@@ -154,7 +158,9 @@ seguridad documentada que ningún test ejercita**.
 
 ### 7.4. Calidad y duplicación (medido)
 
-- [ ] **Helper de proxy en el gateway** — 9 `httpx.AsyncClient` por request en
+- [x] **Helper de proxy en el gateway — HECHO 2026-10-29 (ffaa3d7).** El cliente a iacore ya era
+      uno solo (lifespan); los 9 bloques al executor y al camera bridge pasaron a `downstream()`.
+      Lo de abajo es el texto original: 9 `httpx.AsyncClient` por request en
       `app.py:227-396`, en bloques try/except casi idénticos. Un helper y dos clientes
       persistentes en el `lifespan`. Es también donde caen los headers de auth, una sola vez.
 - [ ] **Template method para el dead-man** — implementado tres veces en
@@ -194,7 +200,17 @@ seguridad documentada que ningún test ejercita**.
 Lo que estaba en `FIX.txt` como notas crudas, ordenado. `FIX.txt` sigue existiendo como
 libreta de ideas; lo que se decide hacer sube acá.
 
-- [ ] **Pasada completa de UI y UX de la app** (pedido 2026-10-20, repetido 2026-10-22: "un
+- [ ] **Pasada completa de UI y UX de la app** — **el rework de la maqueta B + C YA ENTRÓ al repo
+      (verificado 2026-10-29):** Fleet como inicio, Settings junta Robot + Video + Team, Live con
+      pestañas Ask VLM / Detection / Command (experimental), Drive estilo cockpit con pantalla
+      completa, Joints, Memory, idioma inglés/español, SSO. Lo que sigue abierto ya no es el
+      overhaul sino una revisión del front nuevo (ver la respuesta de esa fecha). **Responsive
+      HECHO 2026-10-29** (frontend e658915, 7160dd6): medido con Playwright en 390/820/1180 px,
+      claro y oscuro, 51/51 sin desborde, y las 6 pestañas visibles de 390 a 1920 px (antes se
+      escondían en todo ancho < 1440). Header en dos filas debajo de 1280 (ícono sobre palabra
+      en el teléfono); menús del header a todo el ancho del teléfono; Settings con fila de
+      secciones fija. Script: `responsive.py` (scratchpad, contra un backend de prueba). Texto original:
+      (pedido 2026-10-20, repetido 2026-10-22: "un
       overhaul de todo el front"; para después). **La app se llama Silk Pilot** desde 2026-10-22
       (frontend `c8233aa`: título "Silk Pilot", header = logo de Silk + "Pilot"). No un arreglo
       puntual: revisar las cinco pestañas (Live, Drive, Robot, Video, Joints) como un todo —
@@ -408,6 +424,11 @@ libreta de ideas; lo que se decide hacer sube acá.
         desde la red de la empresa. **Falta:** el server block del nginx + certbot (quien lo
         administra), `TRUSTED_PROXIES`, la dirección pública en Pilot, el registro en Entra, y
         corregir el mail del owner (`silk-techonogies.com`, con `pilot_admin.py set-email`).
+        **2026-10-29, desde las PCs de la oficina no resuelve** (`ERR_NAME_NOT_RESOLVED`): la
+        oficina usa el DC `silk-dns` (192.168.12.100), autoritativo de una zona interna
+        `silk-technologies.com` (split-horizon) que tiene `splunk` → 192.168.12.102 pero no
+        `pilot` (ni `www` ni `zammad`). **RESUELTO ese día:** el usuario creó A `pilot` → 192.168.12.102 en ese DC (verificado;
+        el nginx sirve Pilot por nombre en esa IP, 200).
         **2026-10-28, revisión de seguridad con Pilot ya en internet** (pruebas desde afuera +
         auditoría del código). Desde afuera, bien: todo 401 sin sesión, WebSockets 403, rate
         limit del nginx corta en el 11.º pedido, TLS 1.2/1.3, headers, la IP del cliente real
@@ -438,7 +459,8 @@ libreta de ideas; lo que se decide hacer sube acá.
   - [ ] **Fase 4 — empresarial (resto)**: segundo factor TOTP,
         recuperación de contraseña por mail, sesiones activas con "cerrar en todos lados",
         visor del registro de auditoría.
-  - [ ] **Queda abierto aparte**: iacore (`:8001`), el executor y mediamtx siguen sin
+  - [ ] **Queda abierto aparte** (iacore resuelto 2026-10-29, b610cb8: `run.sh` lo levanta en
+        127.0.0.1, `IACORE_HOST` lo abre): iacore (`:8001`), el executor y mediamtx siguen sin
         credencial en `0.0.0.0` (§7.1 "Token en el borde de servicio"); el login cubre solo la
         puerta del navegador. Los scripts de banco que leen `/ws/view`
         (`robot-video-pipeline/tests/video-bench/`, `_latency_probe.py`) ahora reciben 4401:
@@ -596,13 +618,21 @@ libreta de ideas; lo que se decide hacer sube acá.
          está en la imagen; 3-5 fragmentos con fecha y fuente van como dato; la respuesta dice
          de dónde salió. Medir: segundos que agrega (se espera 1-2 s) y acierto con/sin.
       2. **Base de datos — los tres tipos:**
-         - a. **Datos del robot**: batería, temperaturas, estado, fallas. En vivo del relay
+         - a. ✅ **batería, carga, temperatura del pack, enlace y latencia — hecho 2026-10-28**
+           (backend `robot_watch.state` → iacore `state_facts`, solo cuando se pregunta por él:
+           "¿cuánta batería tenés?" → "82%"). Falta: temperaturas de los motores (solo existen con
+           la pestaña Joints abierta), fallas, historial por Splunk.
+           **Datos del robot**: batería, temperaturas, estado, fallas. En vivo del relay
            (`/health` y el estado que ya lee el executor), no de una base; el historial ("¿cuántas
            veces se cayó hoy?") por la API REST de Splunk, con la cuota de 500 MB/día en mente.
          - b. **Documentos propios (RAG)**: manuales y fichas de equipos en PDF → trozos →
            embeddings locales en CPU (multilingual-e5-small o bge-m3) → `sqlite-vec`. Se cruza con
            la lectura: "¿está bien que marque 250?" contra el rango de la ficha.
-         - c. **Memoria de personas y charlas**: SQLite (personas, notas, lo que se le pidió
+         - c. ✅ **Memoria del robot — hecho 2026-10-28** (backend `memory.py`, pestaña Memory):
+           "guardá esta imagen" / "acordate que…" en los dos idiomas, por robot, la ve todo el
+           equipo; las notas vuelven al asistente ("¿dónde está la llave?" → "en el cajón de
+           arriba"). Falta: personas (punto 3) y el registro de charlas.
+           **Memoria de personas y charlas**: SQLite (personas, notas, lo que se le pidió
            recordar, registro de charlas). "Bender, acordate que…" guarda; "¿qué te dije
            ayer?" busca.
       3. **Reconocer personas ("ver a alguien y decir quién es").** Detector YuNet + SFace de
@@ -626,9 +656,22 @@ libreta de ideas; lo que se decide hacer sube acá.
          nuevos que entran en 5000 caracteres (`vlm_common.history_messages`); probado: "¿de qué
          color es?" y "lo que dijiste primero" las entiende, primera palabra 0.7 s igual que
          sin contexto. Falta: las imágenes de turnos viejos y ventanas más grandes (GPU nueva);
-         la búsqueda web todavía arma la consulta solo con la pregunta actual ("cuánto cuesta
-         uno" buscó eso literal). Para probar con más ventana: `VLM_MODEL=…2B… VLM_MMPROJ=…
-         VLM_CTX=8192 ./linux/run.sh`. Lo que quedaba: cada pregunta lleva los turnos anteriores (texto y,
+         la búsqueda web usa la pregunta anterior solo cuando la actual no trae tema ("buscalo",
+         "buscá eso", "look it up": hecho 2026-10-28); una que trae tema a medias ("¿y quién
+         juega mañana?", "cuánto cuesta uno") se busca literal, sin el tema de antes —
+         reescribir la consulta con el modelo usando la conversación. Para probar con más ventana: `VLM_MODEL=…2B… VLM_MMPROJ=…
+         VLM_CTX=8192 ./linux/run.sh`. **Medidor de memoria (2026-10-28)**: cada respuesta
+         termina con una marca `usage` (tokens del prompt según llama-server, ventana de
+         `/props`, turnos enviados de los que hay) y el chat muestra "Memoria: 2.6k de 4.1k
+         tokens · quedan 1.5k"; cuando los turnos viejos ya no entran avisa "Ya no recuerda las
+         primeras N preguntas" con "Empezar otra". Medido en el 4B: ~1.2k la primera pregunta
+         (casi todo el cuadro), ~300 más por turno. Desde la tarde del 2026-10-28 el historial
+         llena la ventana (`history_budget`: ventana − 512 para la respuesta − cuadro − sistema;
+         el cuadro se calcula por tamaño, 1 token por bloque de 32×32, piso 1024): con un cuadro
+         de 1600×1200 recuerda 11 turnos; antes olvidaba con 1.3k libres. Lo olvidado se ve
+         apagado con una línea "ya no recuerda lo de arriba". La búsqueda también entiende
+         preguntas mixtas ("¿cuánto cuesta este multímetro?": el modelo mira el cuadro y arma
+         la consulta "Fluke 87V precio"), 12/13 medidas. Lo que quedaba: cada pregunta lleva los turnos anteriores (texto y,
          donde sirva, las imágenes de esos turnos), con un tope por tokens. Es lo que encarece:
          más prefill por respuesta y más memoria de GPU para el contexto (hoy la 5060 de 8 GB
          está justa: VLM 4.4 + iacore 1.7, ver §7.6). Medir segundos hasta la primera palabra
@@ -644,6 +687,27 @@ libreta de ideas; lo que se decide hacer sube acá.
          consentimiento y botón para borrar).
       Orden sugerido: 3 y 4 no necesitan la GPU nueva (la memoria es SQLite, las caras corren
       en CPU); 1 y 2 sí, por el contexto.
+- [x] **Cómo habla el asistente** — 2026-10-28 (iacore b6b3bb2). `src/vlm_chat_check.py`: 87
+      respuestas (qué está viendo, la imagen, él mismo, la hora, conocimiento, comentarios,
+      saludos, gracias, ruido de Whisper, conversaciones) con chequeos sin temas (emoji,
+      asteriscos, saludo, repregunta, idioma, largo, describir la imagen ante un comentario,
+      copiar una respuesta anterior, "estás mostrándome"). Un clasificador de texto (~27 ms)
+      separa charla de pregunta sobre la imagen; solo la charla lleva la regla de estilo,
+      porque aplicada a todo bajó la lectura de 93 % a 79 %. Resultado: 46 % → 79 % de
+      respuestas limpias, lectura igual (93 %). **Todo cambio de prompt se mide con los DOS
+      chequeos.** Falta: las repreguntas al final en respuestas sobre la imagen ("¿Quieres saber
+      algo más?", 16 %), y probar el modelo nuevo con los dos bancos cuando llegue la GPU.
+      Segunda vuelta (iacore 70b1bc6): "te estoy mostrando / que ves" también señalan la imagen,
+      se sabe robot con cuerpo, saluda de vuelta, las respuestas con búsqueda no repreguntan
+      (0/51). Medido todo de nuevo: lectura 93 %, charla ~80 % (186 respuestas, 2 pasadas).
+      **HECHO 2026-10-29 (10819a5):** la consulta la escribe el modelo con la conversación
+      (preguntas Y respuestas, 3 turnos) y la fecha de hoy — `write_query`, ~130 ms; con imagen,
+      `identify_query` también ve la conversación. Banco de seguimientos: regla vieja 5/12,
+      modelo 12/12. De punta a punta: "¿el anterior a éste?" tras León XIV → "Francisco"; "¿y
+      cuánto sale?" tras "Galaxy S24" → busca el S24; "este control" con la charla del Papa
+      atrás sigue buscando el control que se ve.
+      Límites del 4B: identifica el mismo castillo como Osaka, Himeji o Matsumoto; "no tengo
+      piernas" para el G1.
 - [ ] **Prueba de lectura del VLM** — `AI-VL-core/src/vlm_reading_check.py` (2026-10-19): 57
       preguntas con respuesta conocida sobre las 33 fotos de `fotos/` (las 9 de equipos y 3
       escenas de Descargas ahora están ahí: `clean/23-31`, `scenes/`), por la misma función que
@@ -699,9 +763,9 @@ libreta de ideas; lo que se decide hacer sube acá.
       **no** estaba trackeado — lo gitignorea `/frigate/config/*` — así que se movió aparte en
       vez de borrarse: era una copia de `config.yml` de antes de la mudanza de IP, su única
       diferencia real era el `192.168.123.99` viejo. Frigate siguió healthy después.
-- [ ] Destrackear `unitree_ros2/dds.env` — se escribe en runtime por `POST /dds`, así que cada
+- [x] **HECHO 2026-10-29 (unitree_ros2 802f0e3).** Destrackear `unitree_ros2/dds.env` — se escribe en runtime por `POST /dds`, así que cada
       cambio de red desde la UI ensucia el repo.
-- [ ] Traducir **2** strings en español del frontend — **[blocker]** por la regla de idioma.
+- [x] **Ya estaba hecho (frontend 4ebfda3 "english!"), verificado 2026-10-29.** Traducir **2** strings en español del frontend — **[blocker]** por la regla de idioma.
       *(Corregido 2026-08-28: `STATE.md` decía "4 strings en `ControlPage.tsx:280-312`".
       `ControlPage.tsx` no tiene **ni un** carácter acentuado en sus 502 líneas; el dato estaba
       mal. Ubicación real:)*
