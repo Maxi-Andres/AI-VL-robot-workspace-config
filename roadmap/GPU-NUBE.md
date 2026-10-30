@@ -229,6 +229,32 @@ Falta pasarlo al repo.
   G1 con nuestras manos BrainCo**, que reemplazan al ApplePnP de Dex3 para el paso 1A/5.
 - Gasto del día: ~$1.10 en pods, más el volumen.
 
+### 6c-bis. El banco grande: viejo 4B contra nuevo 4B (2026-10-30, noche)
+
+`AI-VL-core/src/vlm_field_check.py` (commit `32f74e5`): **75 fotos de campo** (Wikimedia
+Commons, con crédito y licencia en `fotos/field/SOURCES.md`) y **268 preguntas**, 22 en inglés.
+Incluye **trampas**: objeto ausente, texto ilegible, ambiguas y premisa falsa. Las respuestas se
+anotaron mirando cada foto antes de correr nada. Cada pregunta 3 veces, por el camino real de la
+app.
+
+| Tipo | Viejo 4B | Nuevo 4B |
+|---|---|---|
+| Lectura (89) | 83.5 % | **90.3 %** |
+| Conteo (27) | **96.3 %** | 81.5 % |
+| Texto chico (64) | 86.5 % | **89.6 %** |
+| Objeto ausente (16) | **93.8 %** | 81.2 % |
+| Premisa falsa (11) | 72.7 % | **84.8 %** |
+| Ambiguas (11) | 57.6 % | 51.5 % |
+| **Total** | **85.1 %** | **86.2 %** |
+| Primera palabra | **0.68 s** | 0.85 s |
+
+- **Empate en el total, con perfiles opuestos.** El nuevo lee mejor y no se traga una premisa
+  falsa. El viejo cuenta mejor y no inventa lo que no está ("0" en un display apagado, "1.2 bar"
+  en una pantalla sin esa columna).
+- **Conclusión:** pasar al nuevo **no es una mejora clara para Pilot**. Además pide retocar el
+  prompt de charla (§6c). Queda como está, con el viejo 4B, hasta que haga falta lectura fina.
+- Las ambiguas (~55 % los dos) son lo que más separaría a un modelo mejor.
+
 ## 6d. GR00T con datos de G1 + BrainCo (2026-10-30)
 
 - `G1_Brainco_PickDrink` está convertido de LeRobot v3 a v2 (el script del repo tardó 2 min), en
