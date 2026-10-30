@@ -244,7 +244,21 @@ Falta pasarlo al repo.
   (`gated=auto`: se aprueba solo al aceptar la licencia). El usuario tiene que aceptar la
   licencia, crear un token Read y guardarlo como secreto de RunPod **`hf_token`**; el pod lo
   recibe como `HF_TOKEN`.
-- Después: el ajuste de prueba (50 pasos, `/workspace/groot_prep.sh` lo retoma donde quedó)
+- ✅ **Destrabado el mismo día:** el usuario aceptó la licencia, y `hf_token` es un secreto de
+  RunPod que el pod recibe como `HF_TOKEN` (`env: {"HF_TOKEN": "{{ RUNPOD_SECRET_hf_token }}"}`;
+  por SSH se lee de `/proc/1/environ`).
+- **Imagen: `runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404`.** DeepSpeed compila un op de
+  CUDA al arrancar y `runpod/base` no trae nvcc: falla con `CUDA_HOME does not exist`.
+- ✅ **Ajuste de prueba hecho:** 50 pasos × 16 ejemplos en la A40, **~1.43 s por paso** ya
+  caliente (los 50 tardaron 7:42 con la carga y el arranque del lector de videos). Se guardó en
+  `/workspace/runs/smoke/checkpoint-50` (9.3 GB): sirve para probar el servidor y el cliente,
+  no para mover nada. La CPU del pod va al tope decodificando video.
+- **El ajuste real cuesta:**
+  - 10 000 pasos × 16: ~4 h, **~$2.40**;
+  - 10 000 × 32 (lo que usa NVIDIA, ~1.8 pasadas por los 174 k cuadros): ~8 h, **~$4.70**.
+
+  La H100 es ~3× más rápida pero cuesta 6.8× más por hora: **conviene la A40**.
+- Antes, la prueba: el ajuste de prueba (50 pasos, `/workspace/groot_prep.sh` lo retoma donde quedó)
   para medir la velocidad A40 vs H100. Luego el seco: el open-loop sobre episodios no vistos y
   los cuadros de nuestro robot.
 
