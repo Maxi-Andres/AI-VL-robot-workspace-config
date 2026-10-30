@@ -229,6 +229,25 @@ Falta pasarlo al repo.
   G1 con nuestras manos BrainCo**, que reemplazan al ApplePnP de Dex3 para el paso 1A/5.
 - Gasto del día: ~$1.10 en pods, más el volumen.
 
+## 6d. GR00T con datos de G1 + BrainCo (2026-10-30)
+
+- `G1_Brainco_PickDrink` está convertido de LeRobot v3 a v2 (el script del repo tardó 2 min), en
+  `/workspace/datasets/lerobot/unitreerobotics/G1_Brainco_PickDrink_Dataset`. La copia v3 quedó
+  como `*_v30`.
+- Tiene `meta/modality.json` con:
+  - **una sola cámara**, `ego_view` = `cam_left_high` de la cabeza, para que se parezca a
+    nuestro robot (el dataset trae 4: dos en la cabeza y dos en las muñecas);
+  - estado y acción de 26 = 7 + 7 brazos (el mismo orden que nuestro `q[15:29]`) + 6 + 6 dedos.
+- Config: `/workspace/code/g1_brainco_config.py` (`NEW_EMBODIMENT`). Los brazos van RELATIVOS
+  y los dedos ABSOLUTOS; 16 pasos.
+- **Bloqueado:** el backbone de N1.7 es `nvidia/Cosmos-Reason2-2B`, **gated** en Hugging Face
+  (`gated=auto`: se aprueba solo al aceptar la licencia). El usuario tiene que aceptar la
+  licencia, crear un token Read y guardarlo como secreto de RunPod **`hf_token`**; el pod lo
+  recibe como `HF_TOKEN`.
+- Después: el ajuste de prueba (50 pasos, `/workspace/groot_prep.sh` lo retoma donde quedó)
+  para medir la velocidad A40 vs H100. Luego el seco: el open-loop sobre episodios no vistos y
+  los cuadros de nuestro robot.
+
 ## 7. Orden de trabajo
 
 1. [ ] **Cuenta:** confirmar dónde está el crédito; si es del jefe, armar el equipo + rol dev +
