@@ -193,6 +193,42 @@ Los dos con el mismo código y el mismo día. El 8B en un A40 de CA-MTL-1 (llama
   `vlm_chat_check_{4b-local,8b-cloud}_*.json`.
 - Costo: unos $0.20 entre todas las pruebas del día (saldo $99.81 a las 14:50).
 
+## 6c. Medido: fotos de campo, y la generación nueva (2026-10-30, tarde)
+
+El banco fácil (fotos de catálogo) no separaba los modelos. Armé uno de **fotos de campo**: 24
+fotos reales de Wikimedia Commons (medidores en paredes, pinzas en uso, tableros sucios,
+chapas de motor), con **50 preguntas cuyas respuestas anoté mirando cada foto ANTES de correr
+ningún modelo**. Saqué una pregunta ambigua y ensanché un regex demasiado estricto, y volví a
+puntuar a todos con el mismo criterio. Está en el scratchpad de la sesión: `hardbench/`
+(`cases.py`, `run.py`, `rescore.py`, `commons/index.json` con la licencia de cada foto).
+Falta pasarlo al repo.
+
+| Modelo | Campo | Fácil | Charla | 1.ª palabra | Dónde |
+|---|---|---|---|---|---|
+| Qwen3-VL-4B Q4 (el de hoy) | 87 % | 91 % | 75 % | 0.66 s | 5060 |
+| Qwen3-VL-8B Q8 | 93 % | 89 % | 80 % | 3.6 s | A40, nube |
+| Qwen3.6-35B-A3B Q4 | 95 % | — | — | 2.7 s (~1 s en el servidor, ~100 tok/s) | A40, nube |
+| **Qwen3.5-4B Q4** (mar 2026) | **96 %** | 88 % | 65 % | 0.82 s | **5060, gratis** |
+
+- Qwen3.5/3.6 entienden imágenes aunque el nombre no diga "VL". **Piensan por defecto**: hay que
+  correrlos con `--jinja --chat-template-kwargs '{"enable_thinking":false}'`. Así no hubo
+  pensamiento oculto: 19-21 tokens por respuesta.
+- La tabla oficial de la tarjeta de Qwen3.5-4B (con pensamiento) lo pone a la par o por encima
+  del Qwen3-VL-30B-A3B: RealWorldQA 79.5 contra 77.4, OCRBench 85.0 contra 83.9, CountBench 96.3
+  contra 90.0.
+- **Conclusión:** para el VLM de Pilot no hace falta la nube. **El Qwen3.5-4B en la 5060 lee
+  mejor que todo lo probado y es gratis.**
+- **Para pasarlo falta retocar el prompt de la charla:** `on_topic` baja de 90 % a 65 % (a un
+  comentario o un saludo le describe el cuadro) y usa algún emoji más. Se mide con los dos
+  bancos, como el 28-10. El archivo ya está en `AI-VL-core/vlm_models/Qwen3.5-4B-Q4_K_M.gguf` +
+  `mmproj-Qwen3.5-4B-F16.gguf`. `linux/vlm-server.sh` todavía no pasa el
+  `--chat-template-kwargs`.
+- La nube queda para **GR00T**. En el volumen ya están el código n1.7 + el entorno
+  (`/workspace/envs/gr00t`, torch 2.7.1+cu128, ve la A40) y los datasets
+  `G1_Brainco_PickDrink` (201 demos, 6.4 GB) y `G1_Brainco_PickApple` (Apache-2.0): **datos de
+  G1 con nuestras manos BrainCo**, que reemplazan al ApplePnP de Dex3 para el paso 1A/5.
+- Gasto del día: ~$1.10 en pods, más el volumen.
+
 ## 7. Orden de trabajo
 
 1. [ ] **Cuenta:** confirmar dónde está el crédito; si es del jefe, armar el equipo + rol dev +
