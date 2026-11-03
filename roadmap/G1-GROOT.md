@@ -346,6 +346,13 @@ G1. Por eso **no bloquea el paso 5**: GR00T se ataca apenas haya GPU alquilada.
 > antes de `place`. Barrido en sim con la botella donde estaba: la caja (16 cm, 10 de alto)
 > entra a la **derecha, 30-45 cm a la derecha de la botella**, o a la izquierda a 15-25 cm.
 > Sin probar en el robot.
+>
+> **2026-11-03 15:40-15:54 — el agarre con las posturas nuevas, 3 de 3** (corrido desde un
+> script con el código nuevo; iacore seguía con el viejo). Botellas de 22-25 cm en tres lugares.
+> Subida y vuelta a 0.85 de la velocidad del relay: el movimiento entero bajó de 89 a 44 s, y al
+> usuario le pareció bien. Mínimo de altura de agarre (el borde de la mano a ≥5 cm de la mesa).
+> Una botella en el canto de la mesa no se encuentra (la mesa al costado de su base es el piso):
+> ponerla 10-15 cm adentro. Falta: desde la pestaña Agent (reiniciar la app) y `place` con caja.
 
 **Pedido del usuario 2026-10-13:** el "Robot command (interpreter)" de `/` quedó flojo —mapea
 una frase a UN comando fijo ("sentate" → se sienta)— y el "VLM (on demand)" solo describe la
