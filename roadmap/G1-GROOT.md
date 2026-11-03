@@ -323,6 +323,15 @@ G1. Por eso **no bloquea el paso 5**: GR00T se ataca apenas haya GPU alquilada.
 
 ### Paso 6 — Conectarlo a la app: voz → VLM → GR00T, en una pestaña nueva
 
+> **2026-11-03 — arrancado, con el agarre determinístico como primera herramienta.**
+> iacore: `src/manipulation.py` (el agarre que levantó la botella 3 de 3, ahora como acción con
+> pasos, cancelable: `/actions/*`) y `src/agent_common.py` (el modelo entiende, planea y usa
+> herramientas `look` y `pick`; la traza sale por SSE en `POST /agent`, STOP en
+> `/agent/stop`). Backend: `/api/agent` (operate) y `/api/agent/stop` (view). Frontend: la
+> pestaña `/agent` (en construcción). Probado con la VLM real: plan y formato bien (0.3-0.7 s
+> por paso); falta la corrida entera con el robot desde la pestaña. GR00T entra después como
+> otra herramienta, sin cambiar el ciclo.
+
 **Pedido del usuario 2026-10-13:** el "Robot command (interpreter)" de `/` quedó flojo —mapea
 una frase a UN comando fijo ("sentate" → se sienta)— y el "VLM (on demand)" solo describe la
 imagen. Lo que se quiere es **una pestaña nueva en el header, solo para esto**: video del
