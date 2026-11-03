@@ -331,6 +331,21 @@ G1. Por eso **no bloquea el paso 5**: GR00T se ataca apenas haya GPU alquilada.
 > pestaña `/agent` (en construcción). Probado con la VLM real: plan y formato bien (0.3-0.7 s
 > por paso); falta la corrida entera con el robot desde la pestaña. GR00T entra después como
 > otra herramienta, sin cambiar el ciclo.
+>
+> **2026-11-03 (tarde) — tercera herramienta, `place`** (la primera tarea decidida el 21-10:
+> botella de la mesa a una caja al lado). `PickAction(into=...)` / `POST /actions/place`
+> (`dry: true` ubica y planea sin tomar el brazo): agarra, sube hasta que el fondo de la
+> botella pasa 6 cm sobre la caja, la lleva derecha (≤15°, solo el eje vertical sostenido),
+> baja a 2 cm del borde, abre, sube y vuelve. La caja la ubica la VLM sola (YOLO no tiene
+> "caja"). Chequeos: el fondo de la botella colgando y la huella de la caja en cada tramo, el
+> retiro del relay sosteniéndola; un STOP mientras la lleva **vuelve a apoyarla donde estaba**
+> y recién ahí abre. **De paso se arregló un error de `arm_ik`**: el paso de orientación
+> apuntaba perpendicular (al eje de giro en vez del cambio buscado) y la mano del agarre quedaba
+> 6-25° fuera de lo pedido; ahora da <1°. **Las posturas del agarre cambian** (en `wide` el
+> hombro sale más, la subida usa codo y muñeca): hay que volver a probar el agarre solo, mirando,
+> antes de `place`. Barrido en sim con la botella donde estaba: la caja (16 cm, 10 de alto)
+> entra a la **derecha, 30-45 cm a la derecha de la botella**, o a la izquierda a 15-25 cm.
+> Sin probar en el robot.
 
 **Pedido del usuario 2026-10-13:** el "Robot command (interpreter)" de `/` quedó flojo —mapea
 una frase a UN comando fijo ("sentate" → se sienta)— y el "VLM (on demand)" solo describe la
