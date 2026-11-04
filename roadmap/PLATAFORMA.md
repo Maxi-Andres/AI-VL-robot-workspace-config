@@ -453,6 +453,19 @@ libreta de ideas; lo que se decide hacer sube acá.
         Menores sin tocar: auditoría sin tope (filas por intentos fallidos), `imgsz`/`num_ctx`
         sin límite para operadores, `CORS_ORIGINS=*` en `run.sh` (inofensivo sin credenciales,
         innecesario en un solo origen), iacore sigue en `0.0.0.0` sin credencial en la LAN.
+        **2026-11-04, verificado:** el **SSO con Entra está andando** desde el 27-10 (client ID
+        propio `502b5f96…`, `sso_enabled=1`, ingresos `auth.sso_login` del 27 y 29-10, uno desde
+        afuera); la "Falta" de arriba está toda hecha. **Siguen abiertos**, probados ese día por la
+        IP pública desde adentro (hairpin): el **22** llega a ticktera (misma clave de host) y
+        ofrece `password`; el **TCP 8189 no está reenviado** (mediamtx escucha en .20.99 pero por
+        201.216.197.132 no contesta; el UDP no se pudo probar).
+        **2026-11-04, inventario con el mismo esquema:** `Silk-Inventory` (repo del usuario,
+        clonado en `~/Desktop/Silk-Inventory`, Node + Caddy en Docker, login Microsoft propio) en
+        `inventario.silk-technologies.com` → ticktera → `https://<VM>:443` (Caddy `tls internal`).
+        Hecho: `deploy/nginx/` de ese repo (sitio, snippet, `install-inventario.sh <IP>`, README),
+        probado con nginx 1.28 + Caddy 2 (sin `proxy_ssl_server_name` da 502), commit d34a29a.
+        **Falta:** crear la VM (IP sin decidir), A `inventario` en GoDaddy → 201.216.197.132 y en
+        `silk-dns` → 192.168.12.102, registro en Entra, correr el script en ticktera.
         3. **Antes de publicarlo a internet** (lo que sigue abierto): Pilot mueve robots. Hoy solo el login cuida la
            puerta del navegador, e iacore/executor/mediamtx siguen sin credencial en la LAN
            (ver "Queda abierto aparte"). Decidir si se publica a internet o solo por VPN/Tailscale.
