@@ -32,14 +32,14 @@ directory no repo tracked — one wiped machine and it was gone.
 └── unitree_sdk2/           pristine vendor SDK — never patch
 ```
 
-11 git repos. The umbrellas gitignore their children, so each child is independent.
+12 git repos (since 2026-11-04 `Silk-Inventory` too). The umbrellas gitignore their children, so each child is independent.
 
 ## What's in here
 
 | Path | What it is |
 |---|---|
 | `skills/cr/references/standard.md` | **The engineering standard.** Every rule cites the incident in this codebase that motivated it. Read this before writing code. |
-| `skills/cr/SKILL.md` | `/cr` — the workspace-wide review gate. Discovers all 11 repos, reviews against the standard. |
+| `skills/cr/SKILL.md` | `/cr` — the workspace-wide review gate. Discovers all 12 repos, reviews against the standard. |
 | `hooks/reindex-if-needed.sh` | Keeps the `codebase-memory` graph fresh. Discovers repos dynamically; re-indexes only what changed (~0.2 s per repo, nothing when nothing changed). |
 | `settings.json` | Registers the hook on SessionStart/Stop and enables the MCP server. |
 | `mcp.json` | The `codebase-memory-mcp` declaration, linked to `../.mcp.json` by `install.sh`. |

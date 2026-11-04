@@ -404,7 +404,7 @@ libreta de ideas; lo que se decide hacer sube acá.
         (no SAML como Splunk), **entran solo los invitados** (cuenta ya vinculada → mail →
         invitación pendiente), la **contraseña queda** como entrada de emergencia. Tenant
         `common` rechazado. Probado con un proveedor falso que firma RS256 (12 tests + Firefox de
-        punta a punta), **no con Entra real**. **Falta para usarlo de verdad:**
+        punta a punta), **no con Entra real**. ✅ **Todo lo de abajo está hecho** (verificado 2026-11-04: ingresos por Microsoft desde el 27-10). Lo que faltaba era:
         1. Registrar la app en Entra (alguien con permiso de admin del tenant; Splunk ya tiene una
            registrada, la misma persona sabe hacerlo): redirect URI Web, client ID, tenant, secreto.
         2. **Un nombre para Pilot**: Entra acepta https en cualquier lado y http solo en localhost.
@@ -421,7 +421,7 @@ libreta de ideas; lo que se decide hacer sube acá.
         lado de Pilot en `AI-VL-ecosystem/docs/PUBLIC_ACCESS.md`; endurecido: `/docs` y
         `/openapi.json` eran públicos (sacados), test que llama TODAS las rutas sin credencial,
         CSP/HSTS/headers, `TRUSTED_PROXIES` (en `~/.pilot/pilot.env`), con SSO la contraseña solo
-        desde la red de la empresa. **Falta:** el server block del nginx + certbot (quien lo
+        desde la red de la empresa. ~~**Falta:**~~ ✅ hecho: el server block del nginx + certbot (quien lo
         administra), `TRUSTED_PROXIES`, la dirección pública en Pilot, el registro en Entra, y
         corregir el mail del owner (`silk-techonogies.com`, con `pilot_admin.py set-email`).
         **2026-10-29, desde las PCs de la oficina no resuelve** (`ERR_NAME_NOT_RESOLVED`): la

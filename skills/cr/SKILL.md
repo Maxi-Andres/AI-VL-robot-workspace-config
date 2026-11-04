@@ -1,7 +1,7 @@
 ---
 name: cr
 description: >-
-  Code review across the whole workspace — all 11 repos in ~/Desktop, not just AI-VL.
+  Code review across the whole workspace — all 12 repos in ~/Desktop, not just AI-VL.
   Discovers uncommitted changes in every repo (the two umbrellas, their children, and the
   robot transport code inside the unitree_ros2 fork), then reviews each against the shared
   engineering standard: hard rules, security, latency and backpressure, architecture,
@@ -46,7 +46,8 @@ git -C <repo> diff --cached     # staged
 Untracked files have no diff base — read them in full. List up front which repos have
 changes and what files, so the user sees the scope before the findings.
 
-**Skip `unitree_sdk2` entirely** — pristine vendor. In `unitree_ros2`, review only
+**Skip `unitree_sdk2` entirely** — pristine vendor. In `Silk-Inventory` (the user's
+inventory app) Spanish is the convention: never flag it. In `unitree_ros2`, review only
 `robot_executor/` and `robot_camera_bridge/`; the rest is Unitree's.
 
 ## 2. Read enough to judge
@@ -65,7 +66,7 @@ Two things to actually do rather than assume:
 
 - **Duplication**: query the codebase-memory graph over the affected repo
   (`search_graph`, `get_architecture`) before claiming something is or isn't already
-  implemented. All 11 repos are indexed and refresh automatically.
+  implemented. All 12 repos are indexed and refresh automatically.
 - **Verification sweeps**: use `/usr/bin/grep -r`. The environment's `grep` is
   `ugrep --ignore-files` and silently skips gitignored directories — which includes the three
   AI-VL app repos, because the umbrella gitignores them.

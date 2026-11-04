@@ -6,6 +6,11 @@ Sirve a dos cosas: el VLM de Pilot (§7) y GR00T (`G1-GROOT.md` paso 1).
 
 ## 0. Estado de la cuenta (2026-10-30)
 
+> **Hoy (2026-11-04): la cuenta está en cero** — sin pods, sin volúmenes, sin endpoints (borrado
+> todo a pedido del usuario: el volumen costaba $0.47/día sin usarse y el pod de ese día ni lo
+> montó). Se vuelve a alquilar cuando haya episodios propios para entrenar (§6f). Lo de abajo
+> es la historia.
+
 - Plugin `runpod@runpod` + MCP por OAuth en Claude Code, firmado con la **cuenta personal** del
   usuario: 0 pods, 0 volúmenes, 0 endpoints, sin crédito, y `get-organization` responde
   *"Organizations are not enabled for this user"* (no está en ningún equipo).
@@ -19,6 +24,12 @@ Sirve a dos cosas: el VLM de Pilot (§7) y GR00T (`G1-GROOT.md` paso 1).
   Firmando el MCP por OAuth con la cuenta personal se sigue viendo una cuenta vacía.
 
 ## 1. Forma: pods efímeros + un volumen de red que no se borra
+
+> **Revisado 2026-11-04:** el volumen fijo no compensó. Un pod limpio llegó a entrenar en ~9 min
+> (bajar modelo, entorno, código y dataset), unos $0.30; el volumen ($14/mes) ata el pod a un solo
+> datacenter, y ese día CA-MTL-1 no tenía lugar. Mientras se use la nube de a ratos: **pod con
+> disco propio, se baja todo al arrancar y se termina al final**. Los scripts del pipeline
+> viven en `.claude/tools/groot-train/`, no en el volumen.
 
 - **Volumen de red** (persistente, vive en UN datacenter): pesos de modelos, datasets de
   teleop, checkpoints, venvs, estado de Tailscale. Se cobra por GB-hora reservado, con o sin
@@ -350,7 +361,7 @@ se arranca de cero (~9 min de pod hasta entrenar, medido hoy).
    de RunPod.
 3. [x] ✅ 2026-10-30 **Medir la ida y vuelta** a CA-MTL-1 y US-NE-1 con un pod de CPU (§2) → elegir el
    datacenter.
-4. [~] ✅ 2026-10-30 volumen creado desde la consola: `3l08i2rln0` ("then_green_spider"), CA-MTL-1, 100 GB, HIGH_PERFORMANCE, **$14/mes** ($0.14/GB, el doble del estándar), se cobra aunque no haya pod. ✅ **Modelos bajados 2026-10-30 14:24** con un A40 de ~5 min (bajó 28 GB en menos de 1 min): `/workspace/models/vlm/` (Qwen3VL-8B-Instruct-Q8_0.gguf 8.2 G + mmproj F16 1.1 G), `/workspace/models/groot/GR00T-N1.7-3B` (6.5 G, checkpoint normal en safetensors, para el ajuste fino) y `/workspace/models/groot/GR00T-N1.7-ApplePnP-V1` (12 G). **Ojo:** ApplePnP viene **exportado en ONNX** para ONNX Runtime/TensorRT (`exported_leapp.yaml`: entra `ego_view` 480×640 + estado por partes, incluidas las piernas), no como checkpoint: el paso 1A se corre con ONNX Runtime, no con `run_gr00t_server.py`. Script: `/workspace/fetch_models.sh`, que se puede volver a correr.
+4. [x] ~~volumen~~ **borrado 2026-11-04** ($2.39 en 6 días; ver §1). Historia: 2026-10-30 volumen creado desde la consola: `3l08i2rln0` ("then_green_spider"), CA-MTL-1, 100 GB, HIGH_PERFORMANCE, **$14/mes** ($0.14/GB, el doble del estándar), se cobra aunque no haya pod. ✅ **Modelos bajados 2026-10-30 14:24** con un A40 de ~5 min (bajó 28 GB en menos de 1 min): `/workspace/models/vlm/` (Qwen3VL-8B-Instruct-Q8_0.gguf 8.2 G + mmproj F16 1.1 G), `/workspace/models/groot/GR00T-N1.7-3B` (6.5 G, checkpoint normal en safetensors, para el ajuste fino) y `/workspace/models/groot/GR00T-N1.7-ApplePnP-V1` (12 G). **Ojo:** ApplePnP viene **exportado en ONNX** para ONNX Runtime/TensorRT (`exported_leapp.yaml`: entra `ego_view` 480×640 + estado por partes, incluidas las piernas), no como checkpoint: el paso 1A se corre con ONNX Runtime, no con `run_gr00t_server.py`. Script: `/workspace/fetch_models.sh`, que se puede volver a correr.
    N1.7.
 5. [ ] **`start.sh` + watchdog** en el repo; pod de A40 a mano; medir el arranque en frío y la
    ida y vuelta real.

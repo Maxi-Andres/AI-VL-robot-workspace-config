@@ -1,6 +1,6 @@
 # Engineering standard — robot + AI-VL workspace
 
-The review standard for **all 11 repos** in `~/Desktop`. Every rule below is grounded in
+The review standard for **all 12 repos** in `~/Desktop`. Every rule below is grounded in
 something that actually happened in this codebase; the citation after each one is the
 evidence, not decoration. A rule with no evidence behind it does not belong here.
 
@@ -338,7 +338,7 @@ provenance note *(~5.000 lines of URDF and meshes in `go2_visualization/`)*; and
   the Jetson actually has, so CI cannot pass syntax the robot would reject.
 - **Dependency audit**: `pip-audit` in CI, advisory rather than blocking — a new CVE
   disclosure must not stand between you and a hotfix.
-- **The graph**: `codebase-memory-mcp` covers all 11 repos and refreshes on session
+- **The graph**: `codebase-memory-mcp` covers all 12 repos and refreshes on session
   start/stop via `.claude/hooks/reindex-if-needed.sh`. Query it before assuming.
 - **Searching**: `grep` in this environment is `ugrep --ignore-files` and **silently skips
   gitignored directories**, including the three AI-VL app repos that the umbrella ignores.
