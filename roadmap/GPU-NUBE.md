@@ -313,8 +313,9 @@ app.
 Pod `groot-two-runs` (`mtd47q4n382zyu`, A100 80 GB, US-MD-1, $1.79/h, volumen de pod 300 GB).
 Corrió 3.2 h; **terminado** el mismo día a pedido del usuario, sin bajar los checkpoints (no
 sirven para nuestra escena). Los scripts del pipeline quedaron en `.claude/tools/groot-train/`.
-El volumen `3l08i2rln0` (CA-MTL-1, ~$14/mes) **sigue existiendo**: el usuario pidió borrarlo,
-falta hacerlo (desde la consola: Storage).
+El volumen `3l08i2rln0` (CA-MTL-1, $0.47/día, $2.39 en total) lo **borró el usuario** el mismo
+día. **Cuenta en cero al 2026-11-04:** sin pods, sin volúmenes, sin endpoints. La próxima vez
+se arranca de cero (~9 min de pod hasta entrenar, medido hoy).
 
 - **Entrenado:** `pilot1500` (1 500 pasos, 16 min, loss 1.21 → 0.86) y `r10k` (10 000 × 16,
   `PickDrink` con 20 episodios separados para prueba en `pickdrink_split/val`).
