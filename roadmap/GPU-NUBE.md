@@ -320,7 +320,7 @@ terminarlo, y no tiene nada que no se pueda volver a bajar.
   decodifican por CPU (1100 % de CPU, 21 % de GPU); a los 35 min no había terminado el primer
   episodio de 20. Para la próxima: pasar los videos a H.264 antes, o `--steps` corto.
 - **En seco con nuestro G1** (fotos de la cabeza + estado de brazos y BrainCo desde el
-  executor, `scratchpad/groot/groot_snap.py`; el modelo corre en el pod, nada se manda):
+  executor, `.claude/tools/groot-dry/`; el modelo corre en el pod, nada se manda):
   - `r10k` responde **coherente** (0.01 rad entre muestras; el 30-10 eran 0.42) y suave, pero
     casi quieto: ≤0.06 rad en medio segundo.
   - **Prueba cruzada** (nuestra imagen / negra / del dataset × nuestro estado / del dataset):
