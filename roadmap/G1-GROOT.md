@@ -321,6 +321,33 @@ G1. Por eso **no bloquea el paso 5**: GR00T se ataca apenas haya GPU alquilada.
 - [ ] Los mismos 20 intentos del paso 4.
 - **Hecho cuando:** GR00T le gana a ACT en la misma tarea, medido.
 
+> **2026-11-04 — lo que ya existe afuera para G1 + BrainCo (buscado ese día).** Antes de grabar
+> nada propio, esto es lo que hay; cambia el orden del paso 5:
+> - **Datasets de Unitree** (`huggingface.co/unitreerobotics`, LeRobot, 640×480 **AV1**, 4
+>   cámaras): ~200 episodios cada uno de GraspOreo, GraspRubiksCube, PickApple, PickCharger,
+>   PickDoll, PickDrink, PickTissues, PickToothpaste (agarres de mesa) y los **WBT** de cuerpo
+>   entero (300 c/u): platos al lavavajillas, almohada, hacer la cama, carpeta al armario, piezas
+>   en caja. Una sola consigna por dataset.
+> - **Checkpoint ya entrenado con 8 de esos** (1 598 episodios, 20 k pasos, Apache-2.0):
+>   [`JeffrinSam/GR00T-N1.7-G1-BrainCo-Pick`](https://huggingface.co/JeffrinSam/GR00T-N1.7-G1-BrainCo-Pick).
+>   Mismo estado/acción que el nuestro (14 brazos + 12 BrainCo 0-1, brazos relativos), solo
+>   cambian los nombres (`observation.state.arm_q`, `hand_state`, video `head_stereo_left`).
+>   Es lo más cercano a "agarrá lo que sea de la mesa" que hay hoy sin grabar.
+> - Otros N1.7 para G1: `nvidia/GR00T-N1.7-ApplePnP-V1` (Dex3, ONNX, paso 1A), varios de la
+>   comunidad en sim o con Dex3/Dex1 (no sirven tal cual para BrainCo).
+> - **Humanoid Everyday** (USC + TRI): 10.3 k trayectorias, 260 tareas con lenguaje, G1 pero con
+>   **Dex3** — sirve para brazos/lenguaje, no para los dedos. RoboTacDex (G1, táctil) anunciado,
+>   no publicado. AgiBot World es otro robot.
+> - **Por qué no hay "uno que haga todo":** cada dataset es una tarea con una frase; el
+>   lenguaje se aprende recién cuando las tareas varían. Lo que generaliza es la mezcla (más
+>   objetos, más frases) **y nuestros propios episodios**, con nuestra cámara y nuestra mesa.
+> - **Probado el mismo día (`GPU-NUBE.md` §6f): no sirve tal cual** — en un encadenado de 5 s
+>   con nuestra escena cierra las manos en el aire; la frase no lo cambia. Lo que queda es el
+>   punto (2): ajustar con **nuestros** episodios, partiendo de este checkpoint o del base.
+> - **Orden nuevo:** (1) ~~probar en seco el checkpoint de 8 tareas con nuestra escena~~ hecho, no;
+>   (2) si reacciona a la escena, ajustarlo con **nuestros** episodios (los mismos 26-D) en vez
+>   de partir del base; (3) mezclar datasets de Unitree + los nuestros con consignas variadas.
+
 ### Paso 6 — Conectarlo a la app: voz → VLM → GR00T, en una pestaña nueva
 
 > **2026-11-03 — arrancado, con el agarre determinístico como primera herramienta.**

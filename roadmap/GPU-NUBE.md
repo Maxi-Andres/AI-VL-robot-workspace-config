@@ -308,6 +308,37 @@ app.
   - **separar episodios de validación** que no entren al entrenamiento;
   - controlar el espacio: `--save-total-limit 1` y borrar `optimizer.pt` al terminar.
 
+## 6f. 10 k pasos, en seco con el robot, y un checkpoint ajeno de 8 tareas (2026-11-04)
+
+Pod `groot-two-runs` (`mtd47q4n382zyu`, A100 80 GB, US-MD-1, $1.79/h, volumen de pod 300 GB).
+Corrió 3.2 h y quedó **detenido** (EXITED) ese día; el disco de 300 GB sigue cobrando hasta
+terminarlo, y no tiene nada que no se pueda volver a bajar.
+
+- **Entrenado:** `pilot1500` (1 500 pasos, 16 min, loss 1.21 → 0.86) y `r10k` (10 000 × 16,
+  `PickDrink` con 20 episodios separados para prueba en `pickdrink_split/val`).
+- **La evaluación con los episodios separados no terminó:** los videos son **AV1** y se
+  decodifican por CPU (1100 % de CPU, 21 % de GPU); a los 35 min no había terminado el primer
+  episodio de 20. Para la próxima: pasar los videos a H.264 antes, o `--steps` corto.
+- **En seco con nuestro G1** (fotos de la cabeza + estado de brazos y BrainCo desde el
+  executor, `scratchpad/groot/groot_snap.py`; el modelo corre en el pod, nada se manda):
+  - `r10k` responde **coherente** (0.01 rad entre muestras; el 30-10 eran 0.42) y suave, pero
+    casi quieto: ≤0.06 rad en medio segundo.
+  - **Prueba cruzada** (nuestra imagen / negra / del dataset × nuestro estado / del dataset):
+    con una pantalla negra responde lo mismo que con nuestra imagen. **Lo maneja el estado, no
+    la imagen:** sobreajuste de una tarea con 200 episodios. No sirve para nuestra escena.
+  - **`JeffrinSam/GR00T-N1.7-G1-BrainCo-Pick`** (8 tareas de Unitree, 1 598 episodios, mismos
+    26-D): la frase ("cup" / "bottle" / "apple") casi no cambia nada; la imagen algo.
+    **Encadenado 5 s** (10 trozos, imagen fija, su acción como estado siguiente): con nuestra
+    escena **cierra las dos manos en el aire** (hasta 0.85) y lleva el brazo derecho atrás
+    (hombro +0.37). **No se prueba en el robot.**
+- **Conclusión:** ningún modelo ajeno ni el nuestro sirve para nuestra escena; lo que falta son
+  **episodios propios** (nuestra cámara, nuestra mesa, varias consignas), no horas de GPU.
+- **Red:** el proxy `ssh.runpod.io` no reenvía puertos (`unsupported channel type`), pero el
+  pod tenía **SSH directo** (`root@154.54.102.32 -p 13506`, en `get-pod` → `ssh.direct`): por ahí
+  sí anda `-L` para el servidor ZMQ. Mirarlo antes de improvisar.
+- **Carga lenta:** Gr00tPolicy tarda ~5 min después de "Loading checkpoint shards" con la GPU
+  en 0 % y carga en float32 (avisos de Flash Attention): probar `bf16`.
+
 ## 7. Orden de trabajo
 
 1. [ ] **Cuenta:** confirmar dónde está el crédito; si es del jefe, armar el equipo + rol dev +
