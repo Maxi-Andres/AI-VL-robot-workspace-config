@@ -311,8 +311,10 @@ app.
 ## 6f. 10 k pasos, en seco con el robot, y un checkpoint ajeno de 8 tareas (2026-11-04)
 
 Pod `groot-two-runs` (`mtd47q4n382zyu`, A100 80 GB, US-MD-1, $1.79/h, volumen de pod 300 GB).
-Corrió 3.2 h y quedó **detenido** (EXITED) ese día; el disco de 300 GB sigue cobrando hasta
-terminarlo, y no tiene nada que no se pueda volver a bajar.
+Corrió 3.2 h; **terminado** el mismo día a pedido del usuario, sin bajar los checkpoints (no
+sirven para nuestra escena). Los scripts del pipeline quedaron en `.claude/tools/groot-train/`.
+El volumen `3l08i2rln0` (CA-MTL-1, ~$14/mes) **sigue existiendo**: el usuario pidió borrarlo,
+falta hacerlo (desde la consola: Storage).
 
 - **Entrenado:** `pilot1500` (1 500 pasos, 16 min, loss 1.21 → 0.86) y `r10k` (10 000 × 16,
   `PickDrink` con 20 episodios separados para prueba en `pickdrink_split/val`).
