@@ -464,8 +464,8 @@ libreta de ideas; lo que se decide hacer sube acá.
         `inventario.silk-technologies.com` → ticktera → `https://<VM>:443` (Caddy `tls internal`).
         Hecho: `deploy/nginx/` de ese repo (sitio, snippet, `install-inventario.sh <IP>`, README),
         probado con nginx 1.28 + Caddy 2 (sin `proxy_ssl_server_name` da 502), commit d34a29a.
-        **Falta:** crear la VM (IP sin decidir), A `inventario` en GoDaddy → 201.216.197.132 y en
-        `silk-dns` → 192.168.12.102, registro en Entra, correr el script en ticktera.
+        **Cerrado 2026-11-04:** el usuario lo terminó por su cuenta (VM, DNS, Entra, ticktera); no
+        se sigue desde acá.
         3. **Antes de publicarlo a internet** (lo que sigue abierto): Pilot mueve robots. Hoy solo el login cuida la
            puerta del navegador, e iacore/executor/mediamtx siguen sin credencial en la LAN
            (ver "Queda abierto aparte"). Decidir si se publica a internet o solo por VPN/Tailscale.
